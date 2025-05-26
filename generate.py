@@ -3,9 +3,9 @@ import os
 from mistralai import Mistral
 
 if __name__ == "__main__":
-    image_path = "/home/cyl/Reconst/Semantic-SAM/input/Pasted image (3).png"
-    mask_path = "/home/cyl/Reconst/Semantic-SAM/output/part_seg_dataset/id 4/mask_1.png"
-    msg = message.instance_description_msg_pil(image_path, mask_path)
+    image_path = "/home/cyl/Reconst/Semantic-SAM/input/id 2.png"
+    mask_path = "/home/cyl/Reconst/Semantic-SAM/output/part_seg_dataset/id 2/mask0/mask_0.png"
+    msg = message.part_description_msg(image_path, mask_path, "microwave oven")
 
     api_key = os.environ.get("MISTRAL_API_KEY")
     if not api_key:
@@ -22,7 +22,7 @@ if __name__ == "__main__":
         messages=[msg]
     )
     # Print the content of the response
-    print("\nDescription of the masked object:")
+    print("\nDescription of the masked part:")
     print("-" * 50)
     print(chat_response.choices[0].message.content)
     print("-" * 50)
