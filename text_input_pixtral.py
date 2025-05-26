@@ -1,6 +1,7 @@
 from mistralai import Mistral
+import os
 
-API_KEY = "your key"
+API_KEY = os.environ["MISTRAL_API_KEY"]
 
 client = Mistral(api_key=API_KEY)
 
