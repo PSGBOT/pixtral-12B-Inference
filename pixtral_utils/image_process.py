@@ -1,12 +1,8 @@
 import base64
-import requests
-import os
 import numpy as np
-import torch
 import torchvision.transforms as T
 from PIL import Image, ImageDraw, ImageEnhance
 from io import BytesIO
-from mistralai import Mistral
 import cv2
 
 def encode_image(image_path):
@@ -28,6 +24,9 @@ def addContour(image, mask):
     return image
 
 def process_image(image_path, mask_path):
+    """
+    Process an image with its mask.
+    """
     try:
         # Read the image and mask
         image = Image.open(image_path).convert("RGBA")
@@ -91,42 +90,3 @@ def process_image(image_path, mask_path):
     except Exception as e:
         print(f"Error processing image: {e}")
         return None
-
-
-
-def instance_description_msg(image_path, mask_path):
-    """
-    Process an image with its mask.
-    Args:
-        image_path (str): Path to the original image
-        mask_path (str): Path to the mask image (white areas indicate the instance)
-
-    Returns:
-        dict: A message structure for the API with the processed image
-    """
-    processed_image = process_image(image_path, mask_path)
-
-    # Create the message structure for the API
-    message = {
-        "role": "user",
-        "content": [
-            {"type": "text", "text": "Describe this highlighted object in the image"},
-            {"type": "image_url", "image_url": f"data:image/jpeg;base64,{processed_image}"}
-        ]
-    }
-    return message
-
-
-def part_description_msg(image_path, mask_path, parent_description):
-    processed_image = process_image(image_path, mask_path)
-
-    # Create the message structure for the API
-    message = {
-        "role": "user",
-        "content": [
-            {"type": "text", "text": f"Describe this highlighted part in the image, given that it is a part of a {parent_description}."},
-            {"type": "image_url", "image_url": f"data:image/jpeg;base64,{processed_image}"}
-        ]
-    }
-
-    return message
