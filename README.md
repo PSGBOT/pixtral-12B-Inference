@@ -19,3 +19,5 @@ icrowave door typically includes features such as a handle, control panel, and p
 rior. This part of the microwave is essential for accessing the interior to place or remove food items.
 --------------------------------------------------
 ```
+![Pasted image](https://github.com/user-attachments/assets/8017aae8-5dd8-4b53-a236-1d427e099890)
+
