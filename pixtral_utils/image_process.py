@@ -1,6 +1,5 @@
 import base64
 import numpy as np
-import torchvision.transforms as T
 from PIL import Image
 from io import BytesIO
 import cv2
