@@ -4,6 +4,7 @@ import torchvision.transforms as T
 from PIL import Image, ImageDraw, ImageEnhance
 from io import BytesIO
 import cv2
+import time  # Import time module for performance measurement
 
 def encode_image(image_path):
     """Encode the image to base64."""
@@ -23,52 +24,69 @@ def addContour(image, mask):
     cv2.drawContours(image, contours, -1, (0, 255, 0), 2)
     return image
 
-def process_image(image_path, mask_path):
+def dim(image, mask):
+    """
+    Create a dimming effect on non-instance areas of an image based on a mask.
+
+    Args:
+        image (PIL.Image): RGBA image to process
+        mask (numpy.ndarray): 2D boolean array where True represents instance pixels
+
+    Returns:
+        PIL.Image: Image with dimmed non-instance areas
+    """
+    # Convert mask to a format usable for creating an alpha mask
+    # Invert the mask since we want to dim areas where mask is False
+    alpha_mask = np.zeros(image.size[::-1], dtype=np.uint8)
+    alpha_mask[~mask] = 180  # Set alpha value for non-instance areas
+
+    # Create a dimming layer
+    dim_array = np.zeros((*image.size[::-1], 4), dtype=np.uint8)
+    dim_array[..., 3] = alpha_mask  # Set alpha channel
+
+    # Convert numpy array to PIL Image
+    dim_layer = Image.fromarray(dim_array, mode="RGBA")
+
+    # Composite the dim layer onto the image
+    image = Image.alpha_composite(image, dim_layer)
+
+    # Convert the processed image to RGB for saving
+    return image.convert("RGB")
+
+
+def process_image_for_description(image_path, mask_path, crop=None):
     """
     Process an image with its mask.
+
+    Args:
+        image_path (str): Path to the image file
+        mask_path (str): Path to the mask file
+
+    Returns:
+        str: Base64 encoded processed image or None if error occurs
     """
     try:
+        # Start timing the process
+        start_time = time.time()
+
         # Read the image and mask
         image = Image.open(image_path).convert("RGBA")
         mask = Image.open(mask_path).convert("L")  # Convert mask to grayscale
 
-        # Resize mask to match image dimensions if needed
-        if mask.size != image.size:
-            mask = mask.resize(image.size, Image.LANCZOS)
-
-        # Create a copy of the original image for processing
-        processed_image = image.copy()
-
-        # Create a dimming layer for dark areas of the mask
-        dim_layer = Image.new("RGBA", image.size, (0, 0, 0, 0))
-        dim_draw = ImageDraw.Draw(dim_layer)
-
         # Get mask data as numpy array for processing
-        mask_data = np.array(mask)
+        if mask.size != image.size:
+            image = image.resize(mask.size, Image.LANCZOS)
 
-        # Find contours of the light areas (instance)
-        # For simplicity, we'll consider pixels with value > 128 as the instance
+        mask_data = np.array(mask)
         instance_mask = mask_data > 128
 
-        # Create a dimming effect for non-instance areas
-        for y in range(image.height):
-            for x in range(image.width):
-                if not instance_mask[y, x]:
-                    # Add semi-transparent black pixel to dim non-instance areas
-                    dim_draw.point((x, y), fill=(0, 0, 0, 130))
-
-        # Composite the dim layer onto the image
-        processed_image = Image.alpha_composite(processed_image, dim_layer)
-
-        # Convert the processed image to RGB for saving
-        processed_image = processed_image.convert("RGB")
-
-        # Convert to numpy array for contour processing
+        # Process the image
+        processed_image = image.copy()
+        processed_image = dim(processed_image, instance_mask)
         processed_np = np.array(processed_image)
-        mask_np = np.array(mask)
 
         # Add contours
-        contoured_image = addContour(processed_np, mask_np)
+        contoured_image = addContour(processed_np, mask_data)
 
         # Convert back to PIL
         processed_image = Image.fromarray(contoured_image)
@@ -83,6 +101,11 @@ def process_image(image_path, mask_path):
 
         # Encode the processed image to base64
         encoded_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
+
+        # Calculate and print the total processing time
+        end_time = time.time()
+        print(f"Total image processing time: {end_time - start_time:.4f} seconds")
+
         return encoded_image
     except FileNotFoundError as e:
         print(f"Error: File not found - {e}")

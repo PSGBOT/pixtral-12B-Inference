@@ -1,7 +1,7 @@
-from pixtral_utils.image_process import process_image
+from pixtral_utils.image_process import process_image_for_description
 
 def instance_description_msg(image_path, mask_path):
-    processed_image = process_image(image_path, mask_path)
+    processed_image = process_image_for_description(image_path, mask_path)
 
     # Create the message structure for the API
     message = {
@@ -15,7 +15,7 @@ def instance_description_msg(image_path, mask_path):
 
 
 def part_description_msg(image_path, mask_path, parent_description):
-    processed_image = process_image(image_path, mask_path)
+    processed_image = process_image_for_description(image_path, mask_path)
 
     # Create the message structure for the API
     message = {
