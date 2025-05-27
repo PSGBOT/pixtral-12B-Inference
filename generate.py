@@ -4,8 +4,8 @@ from mistralai import Mistral
 import json
 
 if __name__ == "__main__":
-    image_path = "/home/cyl/Reconst/Semantic-SAM/input/id 2.png" # original image
-    mask_path = "/home/cyl/Reconst/Semantic-SAM/output/part_seg_dataset/id 2/mask0/mask_0.png" # mask
+    image_path = "part_seg_dataset_sample\part_seg_dataset\id 0.png"
+    mask_path = "part_seg_dataset_sample\part_seg_dataset\id 0\mask_0.png" # mask
     # this message is for part description generation
     msg = vlm_message.part_description_msg(image_path, mask_path, "microwave oven")
     # this message is for instance description generation
