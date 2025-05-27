@@ -6,6 +6,7 @@ import json
 class VLMRelationGenerator:
     def __init__(self, dataset_dir, src_image_dir):
         self.dataset_dir = dataset_dir
+        self.src_image_dir = src_image_dir
         self.dataset = {}
     def load_dataset(self):
         try:
@@ -26,4 +27,8 @@ class VLMRelationGenerator:
             print(f"Error loading dataset: {e}")
             return None
 
-    def load_children_pairs(self, image_id):
+    def load_children(self, image_id):
+        """
+        load all the children under a object
+        """
+    def generate_relation(self, res_dir, child_pair, src_image:Image):

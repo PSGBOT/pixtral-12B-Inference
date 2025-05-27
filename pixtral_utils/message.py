@@ -7,12 +7,14 @@ def instance_description_msg(image_path, mask_path):
     message = {
         "role": "user",
         "content": [
-            {"type": "text", "text": "Describe this highlighted object in the image"},
+            {"type": "text", "text": "This is the masked image:"},
             {"type": "image_url", "image_url": f"data:image/jpeg;base64,{processed_image}"}
         ]
     }
     return message
 
+def part_relation_msg(image_path, mask_path, parent_description):
+    pass
 
 def part_description_msg(image_path, mask_path, parent_description):
     processed_image = process_image_for_description(image_path, mask_path)
