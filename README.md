@@ -6,18 +6,23 @@ This repository contains Python code examples to interact with the PixTral 12B A
 
 ## Setup
 - Setup `your key` as environment variable `PIXTRAL_KEY`
+- Download the sample dataset from feishu group `resources/Data/part_seg_dataset sample.zip` and extract it to a directory (DON'T put the dataset in this project directory)
+- Specify the directory in `config/custom_cfg`
 
 ## Results
 ```bash
-python generate.py
+python generate.py --object_name "microwave oven" --mode "part"
+
+Total image processing time: 0.3092 seconds
+Generating description for part: microwave oven
+Using model: pixtral-12b-2409
+Processing image: /home/cyl/Reconst/Data/Sample dataset/part_seg_dataset_sample/id 2.png
+Using mask: /home/cyl/Reconst/Data/Sample dataset/part_seg_dataset_sample/id 2/mask0/mask_0.png
 
 Description of the masked part:
 --------------------------------------------------
-The highlighted part in the image appears to be the door of the microwave oven. The microwave is situated on a ki
-tchen countertop, and the door is outlined with a green border, indicating that it is the area of interest. The m
-icrowave door typically includes features such as a handle, control panel, and possibly a window to view the inte
-rior. This part of the microwave is essential for accessing the interior to place or remove food items.
+{"name": "Microwave Door", "purpose": "Contains the microwave's interior where food is placed for heating", "text
+": ""}
 --------------------------------------------------
 ```
 ![Pasted image](https://github.com/user-attachments/assets/8017aae8-5dd8-4b53-a236-1d427e099890)
-
