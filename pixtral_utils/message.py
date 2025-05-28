@@ -1,5 +1,6 @@
 from pixtral_utils.image_process import process_image_for_description
 
+
 def instance_description_msg(image_path, mask_path):
     processed_image = process_image_for_description(image_path, mask_path)
 
@@ -7,7 +8,7 @@ def instance_description_msg(image_path, mask_path):
     message = {
         "role": "user",
         "content": [
-            {"type": "text", "text": "This is the masked image:"},
+            {"type": "text", "text": "Please introduce the name and usage of the highlighted object in the image. This is the image:"},
             {"type": "image_url", "image_url": f"data:image/jpeg;base64,{processed_image}"}
         ]
     }
@@ -23,7 +24,7 @@ def part_description_msg(image_path, mask_path, parent_description):
     message = {
         "role": "user",
         "content": [
-            {"type": "text", "text": f"Describe this highlighted part in the image, given that it is a part of a {parent_description}."},
+            {"type": "text", "text": f"The highlighted part in the image is a part of a {parent_description}. Please introduce the name and purpose of this part. If its purpose is too subtle, you can ignore the request of introducing its purpose. If there is any text on this component, also output the text. This is the image:"},
             {"type": "image_url", "image_url": f"data:image/jpeg;base64,{processed_image}"}
         ]
     }
