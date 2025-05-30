@@ -1,0 +1,8 @@
+[project]
+name = "pixtral-12B-Inference"
+version = "0.1.0"
+description = "Pixtral 12B Inference"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
