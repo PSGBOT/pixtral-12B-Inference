@@ -175,3 +175,7 @@ cython_debug/
 
 # custom cfg
 config/custom_cfg.py
+
+# custom script
+script/
+*.ipynb
