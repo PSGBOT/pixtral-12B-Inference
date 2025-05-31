@@ -21,7 +21,7 @@ def strict_instance_description_msg(image_path, mask_path, debug=True):
     message = {
         "role": "user",
         "content": [
-            {"type": "text", "text": "Please introduce the name(If the highlighted object is too abstract or is part of the background, set the name to be \"None\") and usage of the highlighted object in the image. This is the image:"},
+            {"type": "text", "text": "Please introduce the name(If the highlighted object is abstract or is part of the background or not interactable, set the name to be \"None\") and usage of the highlighted object in the image. This is the image:"},
             {"type": "image_url", "image_url": f"data:image/jpeg;base64,{processed_image}"}
         ]
     }
