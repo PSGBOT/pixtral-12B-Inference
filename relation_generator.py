@@ -122,9 +122,10 @@ class VLMRelationGenerator:
                     # generate description for parent instance
                     if 'description' not in image_res[instance_seg]:
                         print("processing description for parent instance")
-                        msg = vlm_message.instance_description_msg(os.path.join(self.src_image_dir, f"{image_id}.png"), p_mask_dir, False)
+                        msg = vlm_message.strict_instance_description_msg(os.path.join(self.src_image_dir, f"{image_id}.png"), p_mask_dir, debug=False)
                         instance_desc = self.infer_vlm(msg, Instance)
                         self.part_seg_dataset[image_id]['masks'][instance_seg]['description'] = instance_desc
+                        print(instance_desc['name'])
                     else:
                         print("existing description, skipping vlm")
 
@@ -133,7 +134,7 @@ class VLMRelationGenerator:
                     for pair in pairs[p_mask_dir]:
                         msg = vlm_message.part_relation_msg(src_img_path, pair[0], pair[1],
                                                             self.part_seg_dataset[image_id]['masks'][instance_seg]['description']['name'])
-        # store the description(valuable) back to the part-seg dataset
+        # store the description(valuable)
         with open(os.path.split(self.dataset_dir)[0]+"_with_description.json", 'w') as f:
             json.dump(self.part_seg_dataset, f, indent=4)
 

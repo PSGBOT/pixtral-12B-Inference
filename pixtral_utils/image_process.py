@@ -23,7 +23,7 @@ def addContour(image, mask):
     cv2.drawContours(image, contours, -1, (0, 255, 0), 2)
     return image
 
-def dim(image, mask):
+def dim(image, mask, level = 0.7):
     """
     Create a dimming effect on non-instance areas of an image based on a mask.
 
@@ -37,7 +37,7 @@ def dim(image, mask):
     # Convert mask to a format usable for creating an alpha mask
     # Invert the mask since we want to dim areas where mask is False
     alpha_mask = np.zeros(image.size[::-1], dtype=np.uint8)
-    alpha_mask[~mask] = 180  # Set alpha value for non-instance areas
+    alpha_mask[~mask] = level*255  # Set alpha value for non-instance areas
 
     # Create a dimming layer
     dim_array = np.zeros((*image.size[::-1], 4), dtype=np.uint8)
@@ -53,7 +53,7 @@ def dim(image, mask):
     return image.convert("RGB")
 
 
-def process_image_for_description(image_path, mask_path, crop=None, debug=True):
+def process_image_for_description(image_path, mask_path, mask_level=0.7, crop=None, debug=True):
     """
     Process an image with its mask.
 
@@ -81,7 +81,7 @@ def process_image_for_description(image_path, mask_path, crop=None, debug=True):
 
         # Process the image
         processed_image = image.copy()
-        processed_image = dim(processed_image, instance_mask)
+        processed_image = dim(processed_image, instance_mask, mask_level)
         processed_np = np.array(processed_image)
 
         # Add contours
@@ -91,9 +91,9 @@ def process_image_for_description(image_path, mask_path, crop=None, debug=True):
         processed_image = Image.fromarray(contoured_image)
 
         # Display the highlighted image
-        #
-        # if debug is True:
-        #     processed_image.show()
+
+        if debug is True:
+            processed_image.show()
 
         # Save the processed image to a BytesIO object
         buffer = BytesIO()
@@ -105,8 +105,8 @@ def process_image_for_description(image_path, mask_path, crop=None, debug=True):
 
         # Calculate and print the total processing time
         end_time = time.time()
-        # if debug is True:
-        #     print(f"Total image processing time: {end_time - start_time:.4f} seconds")
+        if debug is True:
+            print(f"Total image processing time: {end_time - start_time:.4f} seconds")
 
         return encoded_image
     except FileNotFoundError as e:
