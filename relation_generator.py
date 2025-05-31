@@ -1,16 +1,44 @@
+from os.path import isfile
 import pixtral_utils.message as vlm_message
 import os
 from mistralai import Mistral
 import json
 import argparse
 from PIL import Image
+from collections import defaultdict
 import numpy as np
+import time
+import random
+from config import MODEL_SETTINGS
+from pixtral_utils.output_structure import Instance, Part
 
 class VLMRelationGenerator:
-    def __init__(self, dataset_dir, src_image_dir):
+    def __init__(self, dataset_dir, src_image_dir, ouput_dir):
         self.dataset_dir = dataset_dir
         self.src_image_dir = src_image_dir
         self.dataset = {}
+        self.part_seg_dataset = {}
+        self.output_dir = ouput_dir
+
+        api_key = os.environ.get("MISTRAL_API_KEY")
+        if not api_key:
+            print("Error: MISTRAL_API_KEY environment variable not set.")
+            exit(1)
+        # Get model settings from config
+        self.model = MODEL_SETTINGS["model_name"]
+        self.max_tokens = MODEL_SETTINGS["max_tokens"]
+        self.temperature = MODEL_SETTINGS["temperature"]
+        print(f"Using model: {self.model}")
+        # Initialize the Mistral client
+        self.client = Mistral(api_key=api_key)
+
+    def merge_dicts(self, dicts):
+        merged = defaultdict(list)
+        for d in dicts:
+            for k, v in d.items():
+                merged[k].extend(v)  # 合并 list
+        return dict(merged)
+
     def load_dataset(self):
         try:
             if not os.path.exists(self.dataset_dir):
@@ -23,70 +51,94 @@ class VLMRelationGenerator:
             print(f"Loaded part segmentation dataset from {self.dataset_dir}")
             print(f"Dataset contains {len(dataset)} images")
 
-            self.level_seg_dataset = dataset
-            return self.level_seg_dataset
+            self.part_seg_dataset = dataset
+            return True
 
         except Exception as e:
             print(f"Error loading dataset: {e}")
-            return None
+            return False
 
-    def load_children_pair_with_parent(self, p_dir, c_dir_1, c_dir_2):
-        """
-        load masks
-        """
-        pass
-    def generate_relation(self, res_dir, child_pair, src_image):
-        """
-        Generate relation between two objects
+    def infer_vlm(self, msg, response_format):
+        max_retries = 5
+        base_delay = 2  # Base delay in seconds
 
-        Args:
-            res_dir: Directory to save results
-            child_pair: Tuple of (child1_id, child2_id)
-            src_image: Source image
+        for attempt in range(max_retries):
+            try:
+                chat_response = self.client.chat.parse(
+                    model=self.model,
+                    messages=[msg],
+                    response_format=response_format,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature
+                )
+                return json.loads(chat_response.choices[0].message.content)
 
-        Returns:
-            Dictionary containing relation information
-        """
-        if not os.path.exists(res_dir):
-            os.makedirs(res_dir)
+            except Exception as e:
+                # Check if it's a rate limit error
+                if "rate limit" in str(e).lower() or "too many requests" in str(e).lower():
+                    if attempt < max_retries - 1:  # Don't sleep on the last attempt
+                        # Calculate exponential backoff with jitter
+                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                        print(f"Rate limit exceeded. Retrying in {delay:.2f} seconds... (Attempt {attempt + 1}/{max_retries})")
+                        time.sleep(delay)
+                    else:
+                        print(f"Failed after {max_retries} attempts due to rate limiting.")
+                        raise
+                else:
+                    # If it's not a rate limit error, re-raise the exception
+                    print(f"API error: {e}")
+                    raise
 
-        child1_id, child2_id = child_pair
+    def generate_pairs(self, p_mask_dir, children_dir) -> dict:
+        res = {}
+        all_dir = os.listdir(children_dir)
+        children_path = []
+        for child in all_dir:
+            child_path = os.path.join(children_dir, child)
+            if os.path.isfile(child_path):
+                children_path.append(child_path)
+            else:
+                res = self.merge_dicts([res,self.generate_pairs(child_path + '.png', child_path)])
 
-        # Get object information from dataset
-        image_id = os.path.basename(src_image.filename).split('.')[0]
-        image_data = self.level_seg_dataset.get(image_id, {})
+        res[p_mask_dir] = []
 
-        objects = image_data.get("objects", {})
-        child1_data = objects.get(child1_id, {})
-        child2_data = objects.get(child2_id, {})
+        for child_a_id in range(len(children_path)):
+            for child_b_id in range(child_a_id+1, len(children_path)):
+                res[p_mask_dir].append((children_path[child_a_id], children_path[child_b_id]))
+        return res
 
-        if not child1_data or not child2_data:
-            print(f"Object data not found for {child1_id} or {child2_id}")
-            return None
+    def generate_relation(self):
+        for image_id in self.part_seg_dataset:
+            image_res = self.part_seg_dataset[image_id]['masks']
+            for instance_seg in image_res:
+                if 'children' in image_res[instance_seg]:
+                    p_mask_dir = os.path.join(os.path.split(self.dataset_dir)[0],
+                                              image_id,
+                                              image_res[instance_seg]['path'])
 
-        # Extract object names
-        child1_name = child1_data.get("name", "unknown object")
-        child2_name = child2_data.get("name", "unknown object")
+                    children_dir, _ = os.path.splitext(p_mask_dir)
+                    pairs = self.generate_pairs(p_mask_dir, children_dir)
 
-        # Create prompt for VLM to analyze the relation
-        prompt = f"Describe the spatial relationship between the {child1_name} and the {child2_name} in this image."
+                    # generate description for parent instance
+                    if 'description' not in image_res[instance_seg]:
+                        print("processing description for parent instance")
+                        msg = vlm_message.instance_description_msg(os.path.join(self.src_image_dir, f"{image_id}.png"), p_mask_dir, False)
+                        instance_desc = self.infer_vlm(msg, Instance)
+                        self.part_seg_dataset[image_id]['masks'][instance_seg]['description'] = instance_desc
+                    else:
+                        print("existing description, skipping vlm")
 
-        # Here you would use the VLM to get the relation
-        # For now, we'll just return a placeholder
-        relation = {
-            "object1": child1_id,
-            "object2": child2_id,
-            "object1_name": child1_name,
-            "object2_name": child2_name,
-            "relation": "placeholder relation"
-        }
+                    # process pairs
+                    src_img_path = os.path.join(self.src_image_dir, f"{image_id}.png")
+                    for pair in pairs[p_mask_dir]:
+                        msg = vlm_message.part_relation_msg(src_img_path, pair[0], pair[1],
+                                                            self.part_seg_dataset[image_id]['masks'][instance_seg]['description']['name'])
+        # store the description(valuable) back to the part-seg dataset
+        with open(os.path.split(self.dataset_dir)[0]+"_with_description.json", 'w') as f:
+            json.dump(self.part_seg_dataset, f, indent=4)
 
-        # Save relation to file
-        relation_file = os.path.join(res_dir, f"relation_{child1_id}_{child2_id}.json")
-        with open(relation_file, 'w') as f:
-            json.dump(relation, f, indent=4)
 
-        return relation
+
 
 if __name__ == "__main__":
     # get dataset dir and src image dir from argument
@@ -98,10 +150,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Create generator
-    generator = VLMRelationGenerator(args.dataset_dir, args.src_image_dir)
+    generator = VLMRelationGenerator(args.dataset_dir, args.src_image_dir, args.output_dir)
 
     # Load dataset
-    dataset = generator.load_dataset()
-    if not dataset:
-        print("Failed to load dataset. Exiting.")
-        exit(1)
+    generator.load_dataset()
+
+    generator.generate_relation()

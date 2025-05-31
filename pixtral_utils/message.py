@@ -1,8 +1,8 @@
 from pixtral_utils.image_process import process_image_for_description
 
 
-def instance_description_msg(image_path, mask_path):
-    processed_image = process_image_for_description(image_path, mask_path)
+def instance_description_msg(image_path, mask_path, debug=True):
+    processed_image = process_image_for_description(image_path, mask_path, debug)
 
     # Create the message structure for the API
     message = {
@@ -14,11 +14,11 @@ def instance_description_msg(image_path, mask_path):
     }
     return message
 
-def part_relation_msg(image_path, mask_path, parent_description):
+def part_relation_msg(image_path, mask_a, mask_b, parent_description):
     pass
 
-def part_description_msg(image_path, mask_path, parent_description):
-    processed_image = process_image_for_description(image_path, mask_path)
+def part_description_msg(image_path, mask_path, parent_description,debug=True):
+    processed_image = process_image_for_description(image_path, mask_path, debug)
 
     # Create the message structure for the API
     message = {

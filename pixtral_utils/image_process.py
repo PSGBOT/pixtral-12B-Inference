@@ -53,7 +53,7 @@ def dim(image, mask):
     return image.convert("RGB")
 
 
-def process_image_for_description(image_path, mask_path, crop=None):
+def process_image_for_description(image_path, mask_path, crop=None, debug=True):
     """
     Process an image with its mask.
 
@@ -91,7 +91,9 @@ def process_image_for_description(image_path, mask_path, crop=None):
         processed_image = Image.fromarray(contoured_image)
 
         # Display the highlighted image
-        processed_image.show()
+        #
+        # if debug is True:
+        #     processed_image.show()
 
         # Save the processed image to a BytesIO object
         buffer = BytesIO()
@@ -103,7 +105,8 @@ def process_image_for_description(image_path, mask_path, crop=None):
 
         # Calculate and print the total processing time
         end_time = time.time()
-        print(f"Total image processing time: {end_time - start_time:.4f} seconds")
+        # if debug is True:
+        #     print(f"Total image processing time: {end_time - start_time:.4f} seconds")
 
         return encoded_image
     except FileNotFoundError as e:

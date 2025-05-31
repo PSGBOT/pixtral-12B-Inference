@@ -26,3 +26,9 @@ Description of the masked part:
 --------------------------------------------------
 ```
 ![Pasted image](https://github.com/user-attachments/assets/8017aae8-5dd8-4b53-a236-1d427e099890)
+
+## Relation Generation
+```bash
+python relation_generator.py --dataset_dir "/home/cyl/Reconst/Data/Sample dataset/part_seg_dataset/part_seg_dataset.json" --src_image_dir "/hom
+e/cyl/Reconst/Data/Sample dataset/src_img"
+```
