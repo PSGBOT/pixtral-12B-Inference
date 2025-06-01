@@ -6,7 +6,7 @@ from pixtral_utils.output_structure import Instance, Part
 import sys
 
 # Import config settings
-from config import IMAGE_PATHS, MODEL_SETTINGS, OUTPUT_SETTINGS
+from config import IMAGE_PATHS, VLM_SETTINGS, OUTPUT_SETTINGS
 
 
 def parse_arguments():
@@ -60,9 +60,9 @@ if __name__ == "__main__":
         exit(1)
 
     # Get model settings from config
-    model = MODEL_SETTINGS["model_name"]
-    max_tokens = MODEL_SETTINGS["max_tokens"]
-    temperature = MODEL_SETTINGS["temperature"]
+    model = VLM_SETTINGS["model_name"]
+    max_tokens = VLM_SETTINGS["max_tokens"]
+    temperature = VLM_SETTINGS["temperature"]
 
     print(f"Using model: {model}")
     print(f"Processing image: {image_path}")
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     # Generate the description
     chat_response = client.chat.parse(
         model=model,
-        messages=[msg],
+        messages=msg,
         response_format=response_format,
         max_tokens=max_tokens,
         temperature=temperature,

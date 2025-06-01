@@ -32,3 +32,28 @@ Description of the masked part:
 python relation_generator.py --dataset_dir "/home/cyl/Reconst/Data/Sample dataset/part_seg_dataset/part_seg_dataset.json" --src_image_dir "/hom
 e/cyl/Reconst/Data/Sample dataset/src_img"
 ```
+```
+processing description for parent instance
+Total image processing time: 0.0957 seconds
+{'valid': True, 'name': 'Tube of cream or lotion', 'feature': ['The tube has a squeeze dispenser at the top.', "T
+he tube is labeled with the brand 'Rituals'.", 'The tube appears to be partially used, as it is not completely fu
+ll.'], 'usage': ['To contain and dispense a skincare or cosmetic product']}
+processing description for parent instance
+Total image processing time: 0.1051 seconds
+{'valid': True, 'name': 'Cosmetic Bag', 'feature': ['Zipper closure', 'Handle for carrying', 'Rectangular shape']
+, 'usage': ['To store and organize toiletries', 'To store personal care items']}
+processing description for parent instance
+Total image processing time: 0.0843 seconds
+{'valid': False}
+processing description for parent instance
+Total image processing time: 0.0938 seconds
+{'valid': False}
+processing description for parent instance
+Total image processing time: 0.0974 seconds
+{'valid': True, 'name': 'Cosmetic Bag', 'feature': ['Zipper closure', 'Flat rectangular shape', 'Fabric material'
+], 'usage': ['Store and organize toiletries', 'Store and organize personal care items']}
+processing description for parent instance
+Total image processing time: 0.0943 seconds
+Rate limit exceeded. Retrying in 2.24 seconds... (Attempt 1/5)
+
+```

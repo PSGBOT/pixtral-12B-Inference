@@ -9,7 +9,7 @@ from collections import defaultdict
 import numpy as np
 import time
 import random
-from config import MODEL_SETTINGS
+from config import VLM_SETTINGS, LLM_SETTINGS
 from pixtral_utils.output_structure import Instance, Part
 
 
@@ -26,10 +26,13 @@ class VLMRelationGenerator:
             print("Error: MISTRAL_API_KEY environment variable not set.")
             exit(1)
         # Get model settings from config
-        self.model = MODEL_SETTINGS["model_name"]
-        self.max_tokens = MODEL_SETTINGS["max_tokens"]
-        self.temperature = MODEL_SETTINGS["temperature"]
-        print(f"Using model: {self.model}")
+        self.vlm = VLM_SETTINGS["model_name"]
+        self.vlm_max_tokens = VLM_SETTINGS["max_tokens"]
+        self.vlm_temperature = VLM_SETTINGS["temperature"]
+        self.llm = LLM_SETTINGS["model_name"]
+        self.llm_max_tokens = LLM_SETTINGS["max_tokens"]
+        self.llm_temperature = LLM_SETTINGS["temperature"]
+        print(f"Using model: {self.vlm}")
         # Initialize the Mistral client
         self.client = Mistral(api_key=api_key)
 
@@ -59,20 +62,76 @@ class VLMRelationGenerator:
             print(f"Error loading dataset: {e}")
             return False
 
-    def infer_vlm(self, msg, response_format):
+    def infer_vlm(self, msg, response_format=None):
         max_retries = 5
         base_delay = 2  # Base delay in seconds
 
         for attempt in range(max_retries):
             try:
-                chat_response = self.client.chat.parse(
-                    model=self.model,
-                    messages=[msg],
-                    response_format=response_format,
-                    max_tokens=self.max_tokens,
-                    temperature=self.temperature,
-                )
-                return json.loads(chat_response.choices[0].message.content)
+                if response_format == None:
+                    chat_response = self.client.chat.complete(
+                        model=self.vlm,
+                        messages=msg,
+                        max_tokens=self.vlm_max_tokens,
+                        temperature=self.vlm_temperature,
+                    )
+                    return {"response": chat_response.choices[0].message.content}
+                else:
+                    chat_response = self.client.chat.parse(
+                        model=self.vlm,
+                        messages=msg,
+                        response_format=response_format,
+                        max_tokens=self.vlm_max_tokens,
+                        temperature=self.vlm_temperature,
+                    )
+                    return json.loads(chat_response.choices[0].message.content)
+
+            except Exception as e:
+                # Check if it's a rate limit error
+                if (
+                    "rate limit" in str(e).lower()
+                    or "too many requests" in str(e).lower()
+                ):
+                    if attempt < max_retries - 1:  # Don't sleep on the last attempt
+                        # Calculate exponential backoff with jitter
+                        delay = base_delay * (2**attempt) + random.uniform(0, 1)
+                        print(
+                            f"Rate limit exceeded. Retrying in {delay:.2f} seconds... (Attempt {attempt + 1}/{max_retries})"
+                        )
+                        time.sleep(delay)
+                    else:
+                        print(
+                            f"Failed after {max_retries} attempts due to rate limiting."
+                        )
+                        raise
+                else:
+                    # If it's not a rate limit error, re-raise the exception
+                    print(f"API error: {e}")
+                    raise
+
+    def infer_llm(self, msg, response_format=None):
+        max_retries = 5
+        base_delay = 2  # Base delay in seconds
+
+        for attempt in range(max_retries):
+            try:
+                if response_format == None:
+                    chat_response = self.client.chat.complete(
+                        model=self.llm,
+                        messages=msg,
+                        max_tokens=self.llm_max_tokens,
+                        temperature=self.llm_temperature,
+                    )
+                    return {"response": chat_response.choices[0].message.content}
+                else:
+                    chat_response = self.client.chat.parse(
+                        model=self.llm,
+                        messages=msg,
+                        response_format=response_format,
+                        max_tokens=self.llm_max_tokens,
+                        temperature=self.llm_temperature,
+                    )
+                    return json.loads(chat_response.choices[0].message.content)
 
             except Exception as e:
                 # Check if it's a rate limit error
@@ -136,30 +195,48 @@ class VLMRelationGenerator:
                     # generate description for parent instance
                     if "description" not in image_res[instance_seg]:
                         print("processing description for parent instance")
-                        msg = vlm_message.strict_instance_description_msg(
+                        msg = vlm_message.instance_description_msg(
                             os.path.join(self.src_image_dir, f"{image_id}.png"),
                             p_mask_dir,
-                            debug=False,
+                            debug=True,
                         )
-                        instance_desc = self.infer_vlm(msg, Instance)
+
+                        # first generate dense description
+                        instance_desc = self.infer_vlm(msg)
+                        structures_desc = self.infer_llm(
+                            vlm_message.parse_description_msg(
+                                instance_desc["response"]
+                            ),
+                            response_format=Instance,
+                        )
+                        if structures_desc["valid"] == "Yes":
+                            structures_desc["valid"] = True
+                        else:
+                            structures_desc = {"valid": False}
                         self.part_seg_dataset[image_id]["masks"][instance_seg][
                             "description"
-                        ] = instance_desc
-                        print(instance_desc["name"])
+                        ] = structures_desc
+                        print(structures_desc)
+
                     else:
                         print("existing description, skipping vlm")
 
                     # process pairs
-                    src_img_path = os.path.join(self.src_image_dir, f"{image_id}.png")
-                    for pair in pairs[p_mask_dir]:
-                        msg = vlm_message.part_relation_msg(
-                            src_img_path,
-                            pair[0],
-                            pair[1],
-                            self.part_seg_dataset[image_id]["masks"][instance_seg][
-                                "description"
-                            ]["name"],
+                    if self.part_seg_dataset[image_id]["masks"][instance_seg][
+                        "description"
+                    ]["valid"]:
+                        src_img_path = os.path.join(
+                            self.src_image_dir, f"{image_id}.png"
                         )
+                        for pair in pairs[p_mask_dir]:
+                            msg = vlm_message.part_relation_msg(
+                                src_img_path,
+                                pair[0],
+                                pair[1],
+                                self.part_seg_dataset[image_id]["masks"][instance_seg][
+                                    "description"
+                                ]["name"],
+                            )
         # store the description(valuable)
         with open(
             os.path.split(self.dataset_dir)[0] + "_with_description.json", "w"
