@@ -8,15 +8,25 @@ import sys
 # Import config settings
 from config import IMAGE_PATHS, MODEL_SETTINGS, OUTPUT_SETTINGS
 
+
 def parse_arguments():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Generate descriptions using Pixtral-12B model")
+    parser = argparse.ArgumentParser(
+        description="Generate descriptions using Pixtral-12B model"
+    )
     parser.add_argument("--image", help="Path to the image file (overrides config)")
     parser.add_argument("--mask", help="Path to the mask file (overrides config)")
-    parser.add_argument("--object_name", help="Name of the object for part description", default="")
-    parser.add_argument("--mode", choices=["part", "instance"], default="instance",
-                        help="Description mode: 'part' or 'instance'")
+    parser.add_argument(
+        "--object_name", help="Name of the object for part description", default=""
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["part", "instance"],
+        default="instance",
+        help="Description mode: 'part' or 'instance'",
+    )
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     # Parse command line arguments
@@ -67,7 +77,7 @@ if __name__ == "__main__":
         messages=[msg],
         response_format=response_format,
         max_tokens=max_tokens,
-        temperature=temperature
+        temperature=temperature,
     )
 
     # Print the content of the response

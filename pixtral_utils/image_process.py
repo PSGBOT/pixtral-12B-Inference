@@ -5,11 +5,12 @@ from io import BytesIO
 import cv2
 import time  # Import time module for performance measurement
 
+
 def encode_image(image_path):
     """Encode the image to base64."""
     try:
         with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
+            return base64.b64encode(image_file.read()).decode("utf-8")
     except FileNotFoundError:
         print(f"Error: The file {image_path} was not found.")
         return None
@@ -17,13 +18,15 @@ def encode_image(image_path):
         print(f"Error: {e}")
         return None
 
+
 def addContour(image, mask):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cv2.drawContours(image, contours, -1, (0, 255, 0), 2)
     return image
 
-def dim(image, mask, level = 0.7):
+
+def dim(image, mask, level=0.7):
     """
     Create a dimming effect on non-instance areas of an image based on a mask.
 
@@ -37,7 +40,7 @@ def dim(image, mask, level = 0.7):
     # Convert mask to a format usable for creating an alpha mask
     # Invert the mask since we want to dim areas where mask is False
     alpha_mask = np.zeros(image.size[::-1], dtype=np.uint8)
-    alpha_mask[~mask] = level*255  # Set alpha value for non-instance areas
+    alpha_mask[~mask] = level * 255  # Set alpha value for non-instance areas
 
     # Create a dimming layer
     dim_array = np.zeros((*image.size[::-1], 4), dtype=np.uint8)
@@ -53,7 +56,9 @@ def dim(image, mask, level = 0.7):
     return image.convert("RGB")
 
 
-def process_image_for_description(image_path, mask_path, mask_level=0.7, crop=None, debug=True):
+def process_image_for_description(
+    image_path, mask_path, mask_level=0.7, crop=None, debug=True
+):
     """
     Process an image with its mask.
 
@@ -101,7 +106,7 @@ def process_image_for_description(image_path, mask_path, mask_level=0.7, crop=No
         buffer.seek(0)
 
         # Encode the processed image to base64
-        encoded_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        encoded_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
 
         # Calculate and print the total processing time
         end_time = time.time()
