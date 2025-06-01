@@ -4,10 +4,16 @@ Contains paths and settings used across the project.
 """
 
 # Model settings
-MODEL_SETTINGS = {
+VLM_SETTINGS = {
     "model_name": "pixtral-12b-2409",
     "max_tokens": 4096,
-    "temperature": 0.8,
+    "temperature": 0.5,
+}
+
+LLM_SETTINGS = {
+    "model_name": "open-mistral-nemo-2407",
+    "max_tokens": 4096,
+    "temperature": 0.3,
 }
 
 # Output settings

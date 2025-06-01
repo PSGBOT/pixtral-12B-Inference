@@ -26,21 +26,26 @@ def addContour(image, mask):
     return image
 
 
-def dim(image, mask, level=0.7):
+def dim_and_highlight(image, mask, dim_level=0.7, highlight_level=0.3):
     """
-    Create a dimming effect on non-instance areas of an image based on a mask.
+    Create a dimming effect on non-instance areas and highlight instance areas with a green tint.
 
     Args:
         image (PIL.Image): RGBA image to process
         mask (numpy.ndarray): 2D boolean array where True represents instance pixels
+        dim_level (float): Opacity level for dimming non-instance areas (0-1)
+        highlight_level (float): Intensity of green highlight on instance areas (0-1)
 
     Returns:
-        PIL.Image: Image with dimmed non-instance areas
+        PIL.Image: Image with dimmed non-instance areas and highlighted instance areas
     """
+    # Convert PIL image to numpy array for processing
+    image_array = np.array(image)
+
+    # Step 1: Create dimming effect for non-instance areas
     # Convert mask to a format usable for creating an alpha mask
-    # Invert the mask since we want to dim areas where mask is False
     alpha_mask = np.zeros(image.size[::-1], dtype=np.uint8)
-    alpha_mask[~mask] = level * 255  # Set alpha value for non-instance areas
+    alpha_mask[~mask] = dim_level * 255  # Set alpha value for non-instance areas
 
     # Create a dimming layer
     dim_array = np.zeros((*image.size[::-1], 4), dtype=np.uint8)
@@ -50,10 +55,25 @@ def dim(image, mask, level=0.7):
     dim_layer = Image.fromarray(dim_array, mode="RGBA")
 
     # Composite the dim layer onto the image
-    image = Image.alpha_composite(image, dim_layer)
+    dimmed_image = Image.alpha_composite(image, dim_layer)
+
+    # Step 2: Create green highlight effect for instance areas
+    # Create a green highlight layer
+    highlight_array = np.zeros((*image.size[::-1], 4), dtype=np.uint8)
+    # Set green channel for instance areas
+    highlight_array[mask, 1] = int(255 * highlight_level)  # Green channel
+    highlight_array[mask, 3] = int(
+        255 * highlight_level
+    )  # Alpha channel for transparency
+
+    # Convert numpy array to PIL Image
+    highlight_layer = Image.fromarray(highlight_array, mode="RGBA")
+
+    # Composite the highlight layer onto the dimmed image
+    final_image = Image.alpha_composite(dimmed_image, highlight_layer)
 
     # Convert the processed image to RGB for saving
-    return image.convert("RGB")
+    return final_image.convert("RGB")
 
 
 def process_image_for_description(
@@ -86,7 +106,7 @@ def process_image_for_description(
 
         # Process the image
         processed_image = image.copy()
-        processed_image = dim(processed_image, instance_mask, mask_level)
+        processed_image = dim_and_highlight(processed_image, instance_mask, mask_level)
         processed_np = np.array(processed_image)
 
         # Add contours
