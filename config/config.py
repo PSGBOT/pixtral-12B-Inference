@@ -3,7 +3,6 @@ Configuration file for Pixtral-12B-Inference project.
 Contains paths and settings used across the project.
 """
 
-
 # Model settings
 MODEL_SETTINGS = {
     "model_name": "pixtral-12b-2409",
