@@ -7,7 +7,7 @@ def instance_description_msg(image_path, mask_path, debug=True):
     )
 
     # Create the message structure for the API
-    message = {
+    user_message = {
         "role": "user",
         "content": [
             {
@@ -33,7 +33,7 @@ Remember, if you're uncertain about the highlighted area being a distinct object
             },
         ],
     }
-    return [message]
+    return [user_message]
 
 
 def parse_description_msg(msg):
@@ -74,12 +74,12 @@ def part_relation_msg_for_KAF(
     )
 
     # Create the prompt message structure for the API
-    message = {
+    user_message = {
         "role": "user",
         "content": [
             {
                 "type": "text",
-                "text": f"""I will show you two images of a {parent_description}. In each image, a different part is highlighted in green.
+                "text": f"""You are a careful and professional mechanical engineer who can analyze the kinematic relationship between differnet parts of an object with one glance. I will show you two images of a {parent_description}. In each image, a different part is highlighted in green.
 
 First image: Look at the first highlighted part.
 Second image: Look at the second highlighted part.
@@ -95,6 +95,7 @@ Please analyze the kinematic relationship between these two highlighted parts ca
    - Cylindrical joint: Parts can both rotate and slide along the same axis
    - Spherical joint: Parts can rotate around a common point in any direction
    - Planar joint: Parts can translate in two dimensions and rotate around one axis
+   - Press/Spring-loaded joint: One part can be pressed into another with spring resistance
    - Supported: One part bears the weight of the other without rigid connection
    - Unrelated: Parts have no direct physical connection
 
@@ -103,13 +104,6 @@ Please analyze the kinematic relationship between these two highlighted parts ca
 4. Explain whether the connection allows for controlled movement or is designed to be static.
 
 5. If you can determine the purpose of this specific connection in the overall function of the {parent_description}, briefly explain it.
-
-Format your response as:
-Part 1: [name of first highlighted part]
-Part 2: [name of second highlighted part]
-Kinematic Relationship: [detailed description using the terminology above]
-Movement Axis/Direction: [if applicable]
-Purpose of Connection: [functional explanation]
 """,
             },
             {
@@ -124,14 +118,14 @@ Purpose of Connection: [functional explanation]
         ],
     }
 
-    return message
+    return [user_message]
 
 
 def part_description_msg(image_path, mask_path, parent_description, debug=True):
     processed_image = process_image_for_description(image_path, mask_path, debug=debug)
 
     # Create the message structure for the API
-    message = {
+    user_message = {
         "role": "user",
         "content": [
             {
@@ -144,4 +138,4 @@ def part_description_msg(image_path, mask_path, parent_description, debug=True):
             },
         ],
     }
-    return message
+    return [user_message]

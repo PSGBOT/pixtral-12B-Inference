@@ -218,6 +218,7 @@ class VLMRelationGenerator:
                         self.part_seg_dataset[image_id]["masks"][instance_seg][
                             "description"
                         ] = structures_desc
+                        print(structures_desc)
                     else:
                         print("existing description, skipping vlm")
 
@@ -228,18 +229,31 @@ class VLMRelationGenerator:
                         src_img_path = os.path.join(
                             self.src_image_dir, f"{image_id}.png"
                         )
-                        for pair in pairs[p_mask_dir]:
-                            msg = vlm_message.part_relation_msg_for_KAF(
-                                src_img_path,
-                                pair[0],
-                                pair[1],
-                                self.part_seg_dataset[image_id]["masks"][instance_seg][
-                                    "description"
-                                ]["name"],
-                            )
+                        # Search for keys in the pairs dict that match or contain p_mask_dir
+                        matching_keys = []
+                        for key in pairs:
+                            if os.path.splitext(p_mask_dir)[0] in key:
+                                matching_keys.append(key)
+                        print(matching_keys)
+
+                        # Process all pairs for matching keys
+                        for key in matching_keys:
+                            for pair in pairs[key]:
+                                msg = vlm_message.part_relation_msg_for_KAF(
+                                    src_img_path,
+                                    pair[0],
+                                    pair[1],
+                                    self.part_seg_dataset[image_id]["masks"][
+                                        instance_seg
+                                    ]["description"]["name"],
+                                    debug=False,
+                                )
+                                kinematic_desc = self.infer_vlm(msg)
+                                print(kinematic_desc)
+
         # store the description(valuable)
         with open(
-            os.path.split(self.dataset_dir)[0] + "_with_description.json", "w"
+            os.path.splitext(self.dataset_dir)[0] + "_with_description.json", "w"
         ) as f:
             json.dump(self.part_seg_dataset, f, indent=4)
 
