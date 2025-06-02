@@ -198,17 +198,19 @@ class VLMRelationGenerator:
                         msg = vlm_message.instance_description_msg(
                             os.path.join(self.src_image_dir, f"{image_id}.png"),
                             p_mask_dir,
-                            debug=True,
+                            debug=False,
                         )
 
                         # first generate dense description
                         instance_desc = self.infer_vlm(msg)
+                        # then use llm to parse the description into json
                         structures_desc = self.infer_llm(
                             vlm_message.parse_description_msg(
                                 instance_desc["response"]
                             ),
                             response_format=Instance,
                         )
+                        # process validity
                         if structures_desc["valid"] == "Yes":
                             structures_desc["valid"] = True
                         else:
@@ -216,8 +218,6 @@ class VLMRelationGenerator:
                         self.part_seg_dataset[image_id]["masks"][instance_seg][
                             "description"
                         ] = structures_desc
-                        print(structures_desc)
-
                     else:
                         print("existing description, skipping vlm")
 
@@ -229,7 +229,7 @@ class VLMRelationGenerator:
                             self.src_image_dir, f"{image_id}.png"
                         )
                         for pair in pairs[p_mask_dir]:
-                            msg = vlm_message.part_relation_msg(
+                            msg = vlm_message.part_relation_msg_for_KAF(
                                 src_img_path,
                                 pair[0],
                                 pair[1],
