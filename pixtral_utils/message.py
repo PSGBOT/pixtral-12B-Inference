@@ -36,7 +36,7 @@ Remember, if you're uncertain about the highlighted area being a distinct object
     return [user_message]
 
 
-def parse_description_msg(msg):
+def parse_instance_description_msg(msg):
     message = [
         {"role": "system", "content": "Extract the description information."},
         {
@@ -79,31 +79,41 @@ def part_relation_msg_for_KAF(
         "content": [
             {
                 "type": "text",
-                "text": f"""You are a careful and professional mechanical engineer who can analyze the kinematic relationship between differnet parts of an object with one glance. I will show you two images of a {parent_description}. In each image, a different part is highlighted in green.
+                "text": f"""You are an expert mechanical engineer specializing in kinematic analysis of mechanical systems. I will show you two images of a {parent_description}. In each image, a different part is highlighted in green.
 
-First image: Look at the first highlighted part.
-Second image: Look at the second highlighted part.
+First image: The first highlighted part (Part 0).
+Second image: The second highlighted part (Part 1).
 
-Please analyze the kinematic relationship between these two highlighted parts carefully:
+Your task is to analyze the precise kinematic relationship between these two highlighted parts:
 
-1. First, identify each highlighted part by its specific name.
+1. Identify each highlighted part with its technical name.
 
-2. Describe in detail how these parts are physically connected to each other, using one or more of the following kinematic relationship terms:
-   - Fixed/Rigid connection: Parts are firmly attached with no relative movement
-   - Revolute joint: Parts rotate relative to each other around a single axis
-   - Prismatic joint: Parts slide linearly relative to each other along a single axis
-   - Cylindrical joint: Parts can both rotate and slide along the same axis
-   - Spherical joint: Parts can rotate around a common point in any direction
-   - Planar joint: Parts can translate in two dimensions and rotate around one axis
-   - Press/Spring-loaded joint: One part can be pressed into another with spring resistance
-   - Supported: One part bears the weight of the other without rigid connection
-   - Unrelated: Parts have no direct physical connection
+2. Determine the exact type of kinematic joint or connection between these parts,  one or more of these standard mechanical engineering terms:
+   - fixed: Parts are firmly attached with no relative movement
+   - revolute: Parts rotate relative to each other around a single axis
+   - prismatic: Parts slide linearly relative to each other along a single axis
+   - cylindrical: Parts can both rotate and slide along the same axis
+   - spherical: Parts can rotate around a common point in any direction
+   - planar: Parts can translate in two dimensions and rotate around one axis
+   - press: One part can be pressed into another with spring resistance
+   - supported: One part bears the weight of the other without rigid connection
 
-3. If applicable, specify the axis or direction of movement (vertical, horizontal, etc.).
+3. Specify the exact axis or direction of movement, using the following standard terms:
+    - vertical
+    - horizontal
+    - radial
+    - axial
 
-4. Explain whether the connection allows for controlled movement or is designed to be static.
+4. Determine whether the connection is:
+   - static: Designed to prevent movement
+   - controlled: Allows specific, limited movement
+   - free: Allows unrestricted movement within the joint's degrees of freedom
 
-5. If you can determine the purpose of this specific connection in the overall function of the {parent_description}, briefly explain it.
+5. Explain the functional purpose of this specific connection in the overall operation of the {parent_description}.
+
+6. Identify which part serves as the kinematic root (the more fixed/stable part that the other part moves relative to). Use "0" for the first part, "1" for the second part, or "neither" if neither part is clearly the root.
+
+If multiple joint types exist between these parts, list each one separately using the format above.
 """,
             },
             {
@@ -119,6 +129,54 @@ Please analyze the kinematic relationship between these two highlighted parts ca
     }
 
     return [user_message]
+
+
+def parse_part_relation_msg(msg):
+    message = [
+        {
+            "role": "system",
+            "content": """Extract the kinematic relationship information between the parts described in the message.
+
+Your task is to identify and structure the kinematic joint information according to these rules:
+
+1. Identify valid kinematic joint types in the text. Only use these standard terms:
+   - fixed
+   - revolute
+   - prismatic
+   - cylindrical
+   - spherical
+   - planar
+   - press
+   - supported
+
+2. For each joint identified, extract:
+   - joint_type: The type of joint from the standard list above
+   - joint_movement_axis: The axis or direction of movement (e.g., vertical, horizontal, radial)
+   - is_static: Whether the joint is static or allows movement
+   - purpose: The functional purpose of this joint
+
+3. If multiple joint types exist between the parts, include each as a separate object in the kinematic_joints array.
+
+4. If there is no valid kinematic relationship between the parts, return:
+```json
+{
+  "part1_name": "name of first part",
+  "part2_name": "name of second part",
+  "kinematic_joints": [],
+  "root_part": null
+}
+```
+
+5. For the root part, use part id (`0` or `1`), `0` for the first image, `1` for the second image.
+
+Be precise and only extract information that is explicitly stated in the message.""",
+        },
+        {
+            "role": "user",
+            "content": msg,
+        },
+    ]
+    return message
 
 
 def part_description_msg(image_path, mask_path, parent_description, debug=True):
