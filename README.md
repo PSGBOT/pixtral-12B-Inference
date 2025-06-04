@@ -68,14 +68,15 @@ Rate limit exceeded. Retrying in 2.24 seconds... (Attempt 1/5)
 
 Take `id 1/mask1` as an example:
 ```bash
+id 1/
 ├── mask1.png
-└── mask1
-    ├── mask0
+└── mask1/
+    ├── mask0/
     │   ├── mask0.png
     │   ├── mask1.png
     │   └── mask2.png
     ├── mask0.png
-    ├── mask1
+    ├── mask1/
     │   ├── mask0.png
     │   ├── mask1.png
     │   └── mask2.png
@@ -95,17 +96,46 @@ Each key corresponds to a list of child mask pairs:
 
 ```
 Dataset contains 3 images
+
 existing description, skipping vlm
-['/home/cyl/Reconst/Data/Sample dataset/part_seg_dataset/id 1/mask1/mask1.png', '/home/cyl/Reconst/Data/Sample da
-taset/part_seg_dataset/id 1/mask1/mask0.png', '/home/cyl/Reconst/Data/Sample dataset/part_seg_dataset/id 1/mask1.
-png']
+
+['/home/cyl/Reconst/Data/Sample dataset/part_seg_dataset/id 1/mask1/mask1.png', '/home/cyl/Reconst/Data/Sample dataset/part_seg_dataset/id 1/mask1/mask0.png', '/home/cyl/Reconst/Data/Sample dataset/part_seg_dataset/id 1/mask1.png']
+
 Total image processing time: 0.2574 seconds
 Total image processing time: 0.0639 seconds
-{'part1_name': 'Pump Head', 'part2_name': 'Pump Base', 'kinematic_joints': [{'joint_type': 'r
-evolute', 'joint_movement_axis': 'vertical', 'is_static': 'false', 'purpose': 'To dispense so
-ap when the pump head is pressed'}], 'root_part_id': '1'}
+
+{'response': '### Kinematic Analysis of Soap Dispenser
+
+#### Image 0: Highlighted Part (Part 0)
+- **Technical Name**: Pump mechanism
+
+#### Image 1: Highlighted Part (Part 1)
+- **Technical Name**: Dispensing nozzle
+
+### Kinematic Relationship Analysis
+
+#### Joint Type and Connection
+1. **Joint Type**: Revolute
+   - **Description**: The pump mechanism and thedispensing nozzle are connected in such a way that the nozzle can rotate around a single axis relative to the pump mechanism.
+   - **Axis of Movement**: Radial
+   - **Type of Connection**: Controlled
+   - **Functional Purpose**: Allows the user to direct the flow of soap by rotating the nozzle.
+   - **Kinematic Root**: "0" (The pump mechanism remains stationary while the nozzle rotates.)
+
+### Summary
+- **Highlighted Part in Image 0**: Pump mechanism
+- **Highlighted Part in Image 1**: Dispensing nozzle
+- **Joint Types**:
+  1. Revolute joint with radial movement, controlled connection, functional for directing soap flow, kinematic root is the pump mechanism.
+  2. Fixed joint, static connection, ensures effective operation of the pump mechanism, kinematic root is the bottle.
+
+### Conclusion
+The kinematic analysis reveals that the pump mechanism is the primary stable part, with the dispensing nozzle capable of radial rotation to direct the soap flow. The fixed connection of the pump mechanism to the bottle ensures its proper functioning within the soap dispenser.'}
+
+
+{'part1_name': 'Pump mechanism', 'part2_name': 'Dispensing nozzle', 'kinematic_joints': [{'joint_type': 'revolute', 'joint_movement_axis': 'radial', 'is_static': 'false', 'purpose': 'Allows the user to direct the flow of soapby rotating the nozzle.'}], 'root_part_id': '0'}
+
 ```
 
 4. *TODO*
-Extract information from structured outputs and combine the results under same key together to get the raw data for KAF.
-
+Extract information from structured outputs. Combine the results under same key together to get the raw data for KAF.
