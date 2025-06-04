@@ -10,7 +10,7 @@ import numpy as np
 import time
 import random
 from config import VLM_SETTINGS, LLM_SETTINGS
-from pixtral_utils.output_structure import Instance, Part
+from pixtral_utils.output_structure import Instance, Part, KinematicRelationship
 
 
 class VLMRelationGenerator:
@@ -154,7 +154,14 @@ class VLMRelationGenerator:
                 else:
                     # If it's not a rate limit error, re-raise the exception
                     print(f"API error: {e}")
-                    raise
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2**attempt) + random.uniform(0, 1)
+                        print(
+                            f"Retrying in {delay:.2f} seconds... (Attempt {attempt + 1}/{max_retries})"
+                        )
+                        time.sleep(delay)
+                    else:
+                        raise
 
     def generate_pairs(self, p_mask_dir, children_dir) -> dict:
         res = {}
@@ -198,26 +205,27 @@ class VLMRelationGenerator:
                         msg = vlm_message.instance_description_msg(
                             os.path.join(self.src_image_dir, f"{image_id}.png"),
                             p_mask_dir,
-                            debug=True,
+                            debug=False,
                         )
 
                         # first generate dense description
                         instance_desc = self.infer_vlm(msg)
-                        structures_desc = self.infer_llm(
-                            vlm_message.parse_description_msg(
+                        # then use llm to parse the description into json
+                        structured_desc = self.infer_llm(
+                            vlm_message.parse_instance_description_msg(
                                 instance_desc["response"]
                             ),
                             response_format=Instance,
                         )
-                        if structures_desc["valid"] == "Yes":
-                            structures_desc["valid"] = True
+                        # process validity
+                        if structured_desc["valid"] == "Yes":
+                            structured_desc["valid"] = True
                         else:
-                            structures_desc = {"valid": False}
+                            structured_desc = {"valid": False}
                         self.part_seg_dataset[image_id]["masks"][instance_seg][
                             "description"
-                        ] = structures_desc
-                        print(structures_desc)
-
+                        ] = structured_desc
+                        print(structured_desc)
                     else:
                         print("existing description, skipping vlm")
 
@@ -228,19 +236,37 @@ class VLMRelationGenerator:
                         src_img_path = os.path.join(
                             self.src_image_dir, f"{image_id}.png"
                         )
-                        for pair in pairs[p_mask_dir]:
-                            msg = vlm_message.part_relation_msg(
-                                src_img_path,
-                                pair[0],
-                                pair[1],
-                                self.part_seg_dataset[image_id]["masks"][instance_seg][
-                                    "description"
-                                ]["name"],
-                            )
+                        # Search for keys in the pairs dict that match or contain p_mask_dir
+                        matching_keys = []
+                        for key in pairs:
+                            if os.path.splitext(p_mask_dir)[0] in key:
+                                matching_keys.append(key)
+                        print(matching_keys)
+
+                        # Process all pairs for matching keys
+                        for key in matching_keys:  # key is the directrory
+                            for pair in pairs[key]:
+                                msg = vlm_message.part_relation_msg_for_KAF(
+                                    src_img_path,
+                                    pair[0],
+                                    pair[1],
+                                    self.part_seg_dataset[image_id]["masks"][
+                                        instance_seg
+                                    ]["description"]["name"],
+                                    debug=True,
+                                )
+                                kinematic_desc = self.infer_vlm(msg)
+                                # print(kinematic_desc)
+                                structured_kinematic_desc = self.infer_llm(
+                                    vlm_message.parse_part_relation_msg(
+                                        kinematic_desc["response"]
+                                    ),
+                                    KinematicRelationship,
+                                )
+                                print(structured_kinematic_desc)
+
         # store the description(valuable)
-        with open(
-            os.path.split(self.dataset_dir)[0] + "_with_description.json", "w"
-        ) as f:
+        with open(self.dataset_dir, "w") as f:
             json.dump(self.part_seg_dataset, f, indent=4)
 
 
