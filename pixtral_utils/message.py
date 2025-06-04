@@ -65,12 +65,12 @@ def part_relation_msg_for_KAF(
     """
     # Process the image with the first mask
     processed_image_a = process_image_for_description(
-        image_path, mask_a, debug=debug, mask_level=0.75
+        image_path, mask_a, debug=debug, mask_level=0.15, highlight_level=0.6
     )
 
     # Process the image with the second mask
     processed_image_b = process_image_for_description(
-        image_path, mask_b, debug=debug, mask_level=0.75
+        image_path, mask_b, debug=debug, mask_level=0.15, highlight_level=0.6
     )
 
     # Create the prompt message structure for the API
@@ -81,10 +81,10 @@ def part_relation_msg_for_KAF(
                 "type": "text",
                 "text": f"""You are an expert mechanical engineer specializing in kinematic analysis of mechanical systems. I will show you two images of a {parent_description}. In each image, a different part is highlighted in green.
 
-First image: The first highlighted part (Part 0).
-Second image: The second highlighted part (Part 1).
+Image 0: The first highlighted part (Part 0).
+Image 1: The second highlighted part (Part 1).
 
-Your task is to analyze the precise kinematic relationship between these two highlighted parts:
+Your task is to analyze the precise kinematic relationship between these two highlighted parts (no other parts should be involved):
 
 1. Identify each highlighted part with its technical name.
 
@@ -97,6 +97,7 @@ Your task is to analyze the precise kinematic relationship between these two hig
    - planar: Parts can translate in two dimensions and rotate around one axis
    - press: One part can be pressed into another with spring resistance
    - supported: One part bears the weight of the other without rigid connection
+   - unrelated: Parts are not directly connected or attached to each other
 
 3. Specify the exact axis or direction of movement, using the following standard terms:
     - vertical
@@ -111,7 +112,16 @@ Your task is to analyze the precise kinematic relationship between these two hig
 
 5. Explain the functional purpose of this specific connection in the overall operation of the {parent_description}.
 
-6. Identify which part serves as the kinematic root (the more fixed/stable part that the other part moves relative to). Use "0" for the first part, "1" for the second part, or "neither" if neither part is clearly the root.
+6. Identify which part serves as the kinematic root (the more fixed/stable part that the other part moves relative to). Use the following criteria to determine the root:
+   - The part that remains stationary while the other part moves
+   - The part that is attached to the main structure or frame
+   - The part that constrains or guides the movement of the other part
+   - The part that would typically be considered the "base" in engineering terms
+
+   After analysis, specify exactly one of these answers:
+   - "0" if the part in image 0 is the kinematic root
+   - "1" if the part in image 1 is the kinematic root
+   - "neither" if both parts move equally relative to each other or if they are both attached to a third part that serves as the actual root
 
 If multiple joint types exist between these parts, list each one separately using the format above.
 """,
@@ -148,6 +158,7 @@ Your task is to identify and structure the kinematic joint information according
    - planar
    - press
    - supported
+   - unrelated
 
 2. For each joint identified, extract:
    - joint_type: The type of joint from the standard list above
@@ -157,17 +168,7 @@ Your task is to identify and structure the kinematic joint information according
 
 3. If multiple joint types exist between the parts, include each as a separate object in the kinematic_joints array.
 
-4. If there is no valid kinematic relationship between the parts, return:
-```json
-{
-  "part1_name": "name of first part",
-  "part2_name": "name of second part",
-  "kinematic_joints": [],
-  "root_part": null
-}
-```
-
-5. For the root part, use part id (`0` or `1`), `0` for the first image, `1` for the second image.
+4. For the root part, use part id (`0` or `1`), `0` for the first image, `1` for the second image.
 
 Be precise and only extract information that is explicitly stated in the message.""",
         },

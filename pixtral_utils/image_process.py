@@ -77,7 +77,7 @@ def dim_and_highlight(image, mask, dim_level=0.7, highlight_level=0.3):
 
 
 def process_image_for_description(
-    image_path, mask_path, mask_level=0.7, crop=None, debug=True
+    image_path, mask_path, mask_level=0.7, highlight_level=0.3, crop=None, debug=True
 ):
     """
     Process an image with its mask.
@@ -106,7 +106,9 @@ def process_image_for_description(
 
         # Process the image
         processed_image = image.copy()
-        processed_image = dim_and_highlight(processed_image, instance_mask, mask_level)
+        processed_image = dim_and_highlight(
+            processed_image, instance_mask, mask_level, highlight_level
+        )
         processed_np = np.array(processed_image)
 
         # Add contours

@@ -256,7 +256,7 @@ class VLMRelationGenerator:
                                     debug=True,
                                 )
                                 kinematic_desc = self.infer_vlm(msg)
-                                # print(kinematic_desc)
+                                print(kinematic_desc)
                                 structured_kinematic_desc = self.infer_llm(
                                     vlm_message.parse_part_relation_msg(
                                         kinematic_desc["response"]
