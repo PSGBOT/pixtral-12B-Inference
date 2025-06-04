@@ -9,6 +9,12 @@ This repository contains Python code examples to interact with the PixTral 12B A
 - Download the sample dataset from feishu group `resources/Data/part_seg_dataset sample.zip` and extract it to a directory (DON'T put the dataset in this project directory)
 - Specify the directory in `config/custom_cfg`
 
+## Image processing
+Process the source image and mask (area of interest) to guide the VLM for better understanding
+- [ ] Crop the instance of interest
+- [x] highlight the area of instance/part of interest
+- [x] highlight the contour of the instance/part of interest
+
 ## Relation Generation
 Related script: `relation_generator.py`
 
@@ -25,7 +31,7 @@ First for each root level mask, generate the instance description:
 - feature: list of features of the instance
 - usage: list of usage of the instance
 
-The generation of instance description follows a two-stage process:
+The generation of instance description follows a **two-stage inference** process:
 - First pass the processed image to VLM to generate a detailed description of the instance
 - Second pass the ouput to LLM to parse the detailed description and generated structured output (in a json format)
 
@@ -54,6 +60,52 @@ Total image processing time: 0.0974 seconds
 processing description for parent instance
 Total image processing time: 0.0943 seconds
 Rate limit exceeded. Retrying in 2.24 seconds... (Attempt 1/5)
+...
 ```
 
-####
+#### Relation Description
+1. For the child masks under an instance, generate parent-child key-value pairs for relation generation. Each pair correspond to one KAF.
+
+Take `id 1/mask1` as an example:
+```bash
+├── mask1.png
+└── mask1
+    ├── mask0
+    │   ├── mask0.png
+    │   ├── mask1.png
+    │   └── mask2.png
+    ├── mask0.png
+    ├── mask1
+    │   ├── mask0.png
+    │   ├── mask1.png
+    │   └── mask2.png
+    └── mask1.png
+```
+Generate 3 keys(parent) for `id 1/mask1`: ['id 1/mask1/mask1.png', 'id 1/mask1/mask0.png', 'id 1/mask1.png']
+Each key corresponds to a list of child mask pairs:
+- `id 1/mask1/mask1.png` : 3 pairs
+- `id 1/mask1/mask0.png` : 3 pairs
+- `id 1/mask1.png` : 1 pairs
+
+2. For each pair, process the image using part-level masks
+
+![Pasted image (21)](https://github.com/user-attachments/assets/1b56eddc-d751-4883-84f0-2308ef5193e3)
+
+3. Pass the processed image to model, following similar **two-stage inference** process to generate structured output for part relation.
+
+```
+Dataset contains 3 images
+existing description, skipping vlm
+['/home/cyl/Reconst/Data/Sample dataset/part_seg_dataset/id 1/mask1/mask1.png', '/home/cyl/Reconst/Data/Sample da
+taset/part_seg_dataset/id 1/mask1/mask0.png', '/home/cyl/Reconst/Data/Sample dataset/part_seg_dataset/id 1/mask1.
+png']
+Total image processing time: 0.2574 seconds
+Total image processing time: 0.0639 seconds
+{'part1_name': 'Dispenser Pump Head', 'part2_name': 'Dispenser Bottle', 'kinematic_joints': [{'joint_type': 'fixe
+d', 'joint_movement_axis': 'none', 'is_static': 'static', 'purpose': 'To ensure the pump head remains in place fo
+r effective soap dispensing.'}], 'root_part_id': '0'}
+```
+
+4. *TODO*
+Extract information from structured outputs and combine the results under same key together to get the raw data for KAF.
+
