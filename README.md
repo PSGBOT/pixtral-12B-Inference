@@ -101,9 +101,9 @@ taset/part_seg_dataset/id 1/mask1/mask0.png', '/home/cyl/Reconst/Data/Sample dat
 png']
 Total image processing time: 0.2574 seconds
 Total image processing time: 0.0639 seconds
-{'part1_name': 'Dispenser Pump Head', 'part2_name': 'Dispenser Bottle', 'kinematic_joints': [{'joint_type': 'fixe
-d', 'joint_movement_axis': 'none', 'is_static': 'static', 'purpose': 'To ensure the pump head remains in place fo
-r effective soap dispensing.'}], 'root_part_id': '0'}
+{'part1_name': 'Pump Head', 'part2_name': 'Pump Base', 'kinematic_joints': [{'joint_type': 'r
+evolute', 'joint_movement_axis': 'vertical', 'is_static': 'false', 'purpose': 'To dispense so
+ap when the pump head is pressed'}], 'root_part_id': '1'}
 ```
 
 4. *TODO*
