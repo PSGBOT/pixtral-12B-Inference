@@ -11,6 +11,7 @@ import time
 import random
 from config import VLM_SETTINGS, LLM_SETTINGS
 from pixtral_utils.output_structure import Instance, Part, KinematicRelationship
+from pixtral_utils.message import crop_config
 
 
 class VLMRelationGenerator:
@@ -205,6 +206,11 @@ class VLMRelationGenerator:
                         msg = vlm_message.instance_description_msg(
                             os.path.join(self.src_image_dir, f"{image_id}.png"),
                             p_mask_dir,
+                            crop_config=crop_config(
+                                True,
+                                bbox=image_res[instance_seg]["bbox"],
+                                padding_box=[-20, -20, 20, 20],
+                            ),
                             debug=False,
                         )
 
@@ -253,6 +259,11 @@ class VLMRelationGenerator:
                                     self.part_seg_dataset[image_id]["masks"][
                                         instance_seg
                                     ]["description"]["name"],
+                                    crop_config=crop_config(
+                                        True,
+                                        bbox=image_res[instance_seg]["bbox"],
+                                        padding_box=[-20, -20, 20, 20],
+                                    ),
                                     debug=True,
                                 )
                                 kinematic_desc = self.infer_vlm(msg)
