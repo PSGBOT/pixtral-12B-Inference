@@ -4,6 +4,8 @@ from PIL import Image
 from io import BytesIO
 import cv2
 import time  # Import time module for performance measurement
+import os
+import json
 
 
 def encode_image(image_path):
@@ -77,7 +79,14 @@ def dim_and_highlight(image, mask, dim_level=0.7, highlight_level=0.3):
 
 
 def process_image_for_description(
-    image_path, mask_path, mask_level=0.7, highlight_level=0.3, crop=None, debug=True
+    image_path,
+    mask_path,
+    mask_level=0.7,
+    highlight_level=0.3,
+    crop=None,
+    debug=True,
+    bbox=[0, 0, 10, 10],
+    padding_box=[-10, -10, 10, 10],
 ):
     """
     Process an image with its mask.
@@ -117,6 +126,10 @@ def process_image_for_description(
         # Convert back to PIL
         processed_image = Image.fromarray(contoured_image)
 
+        # crop_box = tuple(a + b for a, b in zip(crop_box, padding_size))
+        if crop:
+            bbox = tuple(a + b for a, b in zip(bbox, padding_box))
+            processed_image = processed_image.crop(bbox)
         # Display the highlighted image
 
         if debug is True:

@@ -3,7 +3,7 @@ from pixtral_utils.image_process import process_image_for_description, encode_im
 
 def instance_description_msg(image_path, mask_path, debug=True):
     processed_image = process_image_for_description(
-        image_path, mask_path, debug=debug, mask_level=0.75
+        image_path, mask_path, debug=debug, crop=True, bbox=[641,343,754,453],padding_box=[-10,-10,10,10]
     )
 
     # Create the message structure for the API
@@ -181,7 +181,7 @@ Be precise and only extract information that is explicitly stated in the message
 
 
 def part_description_msg(image_path, mask_path, parent_description, debug=True):
-    processed_image = process_image_for_description(image_path, mask_path, debug=debug)
+    processed_image = process_image_for_description(image_path, mask_path, debug=debug,crop=True, bbox=[641,343,754,453],padding_box=[-10,-10,10,10])
 
     # Create the message structure for the API
     user_message = {
