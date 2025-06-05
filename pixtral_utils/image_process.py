@@ -7,6 +7,7 @@ import time  # Import time module for performance measurement
 import os
 import json
 
+
 def encode_image(image_path):
     """Encode the image to base64."""
     try:
@@ -78,7 +79,14 @@ def dim_and_highlight(image, mask, dim_level=0.7, highlight_level=0.3):
 
 
 def process_image_for_description(
-    image_path, mask_path, mask_level=0.7, crop=None, debug=True, bbox=[0,0,10,10], padding_box=[-10,-10,10,10]
+    image_path,
+    mask_path,
+    mask_level=0.7,
+    highlight_level=0.3,
+    crop=None,
+    debug=True,
+    bbox=[0, 0, 10, 10],
+    padding_box=[-10, -10, 10, 10],
 ):
     """
     Process an image with its mask.
@@ -97,7 +105,7 @@ def process_image_for_description(
         # Read the image and mask
         image = Image.open(image_path).convert("RGBA")
         mask = Image.open(mask_path).convert("L")  # Convert mask to grayscale
-       
+
         # Get mask data as numpy array for processing
         if mask.size != image.size:
             image = image.resize(mask.size, Image.LANCZOS)
@@ -107,7 +115,9 @@ def process_image_for_description(
 
         # Process the image
         processed_image = image.copy()
-        processed_image = dim_and_highlight(processed_image, instance_mask, mask_level)
+        processed_image = dim_and_highlight(
+            processed_image, instance_mask, mask_level, highlight_level
+        )
         processed_np = np.array(processed_image)
 
         # Add contours
@@ -116,7 +126,7 @@ def process_image_for_description(
         # Convert back to PIL
         processed_image = Image.fromarray(contoured_image)
 
-        #crop_box = tuple(a + b for a, b in zip(crop_box, padding_size))
+        # crop_box = tuple(a + b for a, b in zip(crop_box, padding_size))
         if crop:
             bbox = tuple(a + b for a, b in zip(bbox, padding_box))
             processed_image = processed_image.crop(bbox)
@@ -145,15 +155,3 @@ def process_image_for_description(
     except Exception as e:
         print(f"Error processing image: {e}")
         return None
-
-
-if __name__ == "__main__":
-    # 输入参数设置
-    input_image = "..\part_seg_dataset sample\id 0.png"          # 原始图像路径
-    input_mask = "../part_seg_dataset sample/id 0/mask1.png"
-    crop_region = (641,343,754,453) # (左, 上, 右, 下) 像素坐标
-    output_path = "..\part_seg_dataset sample\id 0_crop.png"  # 输出保存路径
-    
-    # 执行裁剪
-   
-    process_image_for_description(input_image, input_mask, mask_level=0.7, crop=True, debug=True, bbox=[641,343,754,453], padding_box=[-10,-10,10,10])
