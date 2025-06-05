@@ -8,6 +8,15 @@ import os
 import json
 
 
+class crop_config:
+    def __init__(
+        self, crop=False, bbox=[641, 343, 754, 453], padding_box=[-10, -10, 10, 10]
+    ):
+        self.crop = crop
+        self.bbox = bbox
+        self.padding_box = padding_box
+
+
 def encode_image(image_path):
     """Encode the image to base64."""
     try:
@@ -83,10 +92,8 @@ def process_image_for_description(
     mask_path,
     mask_level=0.7,
     highlight_level=0.3,
-    crop=None,
+    crop_config=crop_config(),
     debug=True,
-    bbox=[0, 0, 10, 10],
-    padding_box=[-10, -10, 10, 10],
 ):
     """
     Process an image with its mask.
@@ -127,7 +134,9 @@ def process_image_for_description(
         processed_image = Image.fromarray(contoured_image)
 
         # crop_box = tuple(a + b for a, b in zip(crop_box, padding_size))
-        if crop:
+        if crop_config.crop is True:
+            bbox = crop_config.bbox
+            padding_box = crop_config.padding_box
             bbox = tuple(a + b for a, b in zip(bbox, padding_box))
             processed_image = processed_image.crop(bbox)
         # Display the highlighted image

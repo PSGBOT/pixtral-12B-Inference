@@ -1,9 +1,21 @@
-from pixtral_utils.image_process import process_image_for_description, encode_image
+from pixtral_utils.image_process import (
+    process_image_for_description,
+    encode_image,
+    crop_config,
+)
 
 
-def instance_description_msg(image_path, mask_path, debug=True):
+def instance_description_msg(
+    image_path,
+    mask_path,
+    debug=True,
+    crop_config=crop_config(),
+):
     processed_image = process_image_for_description(
-        image_path, mask_path, debug=debug, crop=True, bbox=[641,343,754,453],padding_box=[-10,-10,10,10]
+        image_path,
+        mask_path,
+        crop_config=crop_config,
+        debug=debug,
     )
 
     # Create the message structure for the API
@@ -48,7 +60,12 @@ def parse_instance_description_msg(msg):
 
 
 def part_relation_msg_for_KAF(
-    image_path, mask_a, mask_b, parent_description, debug=True
+    image_path,
+    mask_a,
+    mask_b,
+    parent_description,
+    crop_config=crop_config(),
+    debug=True,
 ):
     """
     Create a message to query the kinematic relationship between two parts of an object.
@@ -65,12 +82,22 @@ def part_relation_msg_for_KAF(
     """
     # Process the image with the first mask
     processed_image_a = process_image_for_description(
-        image_path, mask_a, debug=debug, mask_level=0.15, highlight_level=0.6
+        image_path,
+        mask_a,
+        mask_level=0.15,
+        highlight_level=0.6,
+        crop_config=crop_config,
+        debug=debug,
     )
 
     # Process the image with the second mask
     processed_image_b = process_image_for_description(
-        image_path, mask_b, debug=debug, mask_level=0.15, highlight_level=0.6
+        image_path,
+        mask_b,
+        mask_level=0.15,
+        highlight_level=0.6,
+        crop_config=crop_config,
+        debug=debug,
     )
 
     # Create the prompt message structure for the API
@@ -180,8 +207,16 @@ Be precise and only extract information that is explicitly stated in the message
     return message
 
 
+# deprecated
 def part_description_msg(image_path, mask_path, parent_description, debug=True):
-    processed_image = process_image_for_description(image_path, mask_path, debug=debug,crop=True, bbox=[641,343,754,453],padding_box=[-10,-10,10,10])
+    processed_image = process_image_for_description(
+        image_path,
+        mask_path,
+        debug=debug,
+        crop=True,
+        bbox=[641, 343, 754, 453],
+        padding_box=[-10, -10, 10, 10],
+    )
 
     # Create the message structure for the API
     user_message = {
