@@ -7,6 +7,7 @@ import argparse
 from PIL import Image
 from collections import defaultdict
 import numpy as np
+import re
 import time
 import random
 from config import VLM_SETTINGS, LLM_SETTINGS
@@ -16,6 +17,13 @@ from pixtral_utils.message import crop_config
 
 class VLMRelationGenerator:
     def __init__(self, dataset_dir, src_image_dir, ouput_dir):
+        """EFFECT:
+                Initialize the vlm relation generator.
+            INPUT: 
+                dataset_dir: dataset description json file
+                src_image_dir: dataset source image directory
+                output_dir: optional, output directort for the KAF json files
+        """
         self.dataset_dir = dataset_dir
         self.src_image_dir = src_image_dir
         self.dataset = {}
@@ -38,6 +46,7 @@ class VLMRelationGenerator:
         self.client = Mistral(api_key=api_key)
 
     def merge_dicts(self, dicts):
+        """EFFECT: Merge multiple dicts into one"""
         merged = defaultdict(list)
         for d in dicts:
             for k, v in d.items():
@@ -45,6 +54,7 @@ class VLMRelationGenerator:
         return dict(merged)
 
     def load_dataset(self):
+        """EFFECT: Load dataset description json into dataset"""
         try:
             if not os.path.exists(self.dataset_dir):
                 print(f"Dataset file not found: {self.dataset_dir}")
@@ -279,7 +289,6 @@ class VLMRelationGenerator:
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
             json.dump(self.part_seg_dataset, f, indent=4)
-
 
 if __name__ == "__main__":
     # get dataset dir and src image dir from argument
