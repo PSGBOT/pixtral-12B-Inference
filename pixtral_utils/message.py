@@ -115,7 +115,7 @@ Your task is to analyze the precise kinematic relationship between these two hig
 
 1. Identify each highlighted part with its technical name.
 
-2. Determine the exact type of kinematic joint or connection between these parts,  one or more of these standard mechanical engineering terms:
+2. Determine all possible types of kinematic joint or connection between these parts,  one or more of these standard mechanical engineering terms:
    - fixed: Parts are firmly attached with no relative movement
    - revolute: Parts rotate relative to each other around a single axis
    - prismatic: Parts slide linearly relative to each other along a single axis
@@ -126,7 +126,7 @@ Your task is to analyze the precise kinematic relationship between these two hig
    - supported: One part bears the weight of the other without rigid connection
    - unrelated: Parts are not directly connected or attached to each other
 
-3. Specify the exact axis or direction of movement, using the following standard terms:
+3. Specify the all possible axis or direction of movement, using the following standard terms:
     - vertical
     - horizontal
     - radial
