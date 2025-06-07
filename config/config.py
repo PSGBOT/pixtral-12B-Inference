@@ -5,13 +5,13 @@ Contains paths and settings used across the project.
 
 # Model settings
 VLM_SETTINGS = {
-    "model_name": "pixtral-12b-2409",
+    "model_name": "gemini-2.0-flash",
     "max_tokens": 4096,
-    "temperature": 0.5,
+    "temperature": 1,
 }
 
 LLM_SETTINGS = {
-    "model_name": "open-mistral-nemo-2407",
+    "model_name": "gemini-2.0-flash",
     "max_tokens": 4096,
     "temperature": 0.3,
 }

@@ -1,8 +1,12 @@
-from pixtral_utils.image_process import (
+from vlm_utils.image_process import (
     process_image_for_description,
     encode_image,
     crop_config,
 )
+from google.genai import types
+import base64
+from io import BytesIO
+from PIL import Image
 
 
 def instance_description_msg(
@@ -14,21 +18,19 @@ def instance_description_msg(
     processed_image = process_image_for_description(
         image_path,
         mask_path,
+        mask_level=0.3,
         crop_config=crop_config,
         debug=debug,
     )
 
     # Create the message structure for the API
-    user_message = {
-        "role": "user",
-        "content": [
-            {
-                "type": "text",
-                "text": """Focus on the area highlighted in green in the image.
+    user_message = (
+        [
+            """Focus only on the area highlighted in green in the image.
 
 Step 1: Determine if the highlighted area represents a distinct, identifiable object or instance:
-- If the highlighted area is clearly a distinct object, proceed to Step 2.
-- If the highlighted area is abstract, ambiguous, or you cannot confidently identify it as a specific object (e.g., part of background, texture, partial view), respond with "Valid: No".
+- If the highlighted area is clearly a distinct foreground object that is interactable, proceed to Step 2.
+- Else, respond with "Valid: No".
 
 Step 2: If the highlighted area is a distinct object, provide:
 1. The specific name of the object (be precise and use technical terms when appropriate)
@@ -38,14 +40,13 @@ Step 2: If the highlighted area is a distinct object, provide:
 
 Remember, if you're uncertain about the highlighted area being a distinct object, respond only with "Valid: No".
 """,
-            },
-            {
-                "type": "image_url",
-                "image_url": f"data:image/jpeg;base64,{processed_image}",
-            },
+            types.Part.from_bytes(
+                data=processed_image,
+                mime_type="image/jpeg",
+            ),
         ],
-    }
-    return [user_message]
+    )
+    return user_message
 
 
 def parse_instance_description_msg(msg):
@@ -87,7 +88,7 @@ def part_relation_msg_for_KAF(
         mask_level=0.15,
         highlight_level=0.6,
         crop_config=crop_config,
-        debug=debug,
+        debug=False,  # NOTE: Change this to debug if separated images are needed
     )
 
     # Process the image with the second mask
@@ -97,16 +98,12 @@ def part_relation_msg_for_KAF(
         mask_level=0.15,
         highlight_level=0.6,
         crop_config=crop_config,
-        debug=debug,
+        debug=False,  # NOTE: Change this to debug if separated images are needed
     )
 
     # Create the prompt message structure for the API
-    user_message = {
-        "role": "user",
-        "content": [
-            {
-                "type": "text",
-                "text": f"""You are an expert mechanical engineer specializing in kinematic analysis of mechanical systems. I will show you two images of a {parent_description}. In each image, a different part is highlighted in green.
+    user_message = [
+        f"""You are an expert mechanical engineer specializing in kinematic analysis of mechanical systems. I will show you two images of a {parent_description}. In each image, a different part is highlighted in green.
 
 Image 0: The first highlighted part (Part 0).
 Image 1: The second highlighted part (Part 1).
@@ -115,7 +112,7 @@ Your task is to analyze the precise kinematic relationship between these two hig
 
 1. Identify each highlighted part with its technical name.
 
-2. Determine the exact type of kinematic joint or connection between these parts,  one or more of these standard mechanical engineering terms:
+2. Determine all possible types of kinematic joint or connection between these parts, using one or more of these standard mechanical engineering terms:
    - fixed: Parts are firmly attached with no relative movement
    - revolute: Parts rotate relative to each other around a single axis
    - prismatic: Parts slide linearly relative to each other along a single axis
@@ -126,7 +123,7 @@ Your task is to analyze the precise kinematic relationship between these two hig
    - supported: One part bears the weight of the other without rigid connection
    - unrelated: Parts are not directly connected or attached to each other
 
-3. Specify the exact axis or direction of movement, using the following standard terms:
+3. Specify the all possible axis or direction of movement, using the following standard terms:
     - vertical
     - horizontal
     - radial
@@ -152,20 +149,23 @@ Your task is to analyze the precise kinematic relationship between these two hig
 
 If multiple joint types exist between these parts, list each one separately using the format above.
 """,
-            },
-            {
-                "type": "image_url",
-                "image_url": f"data:image/jpeg;base64,{processed_image_a}",
-            },
-            {"type": "text", "text": "Second image with different highlighted part:"},
-            {
-                "type": "image_url",
-                "image_url": f"data:image/jpeg;base64,{processed_image_b}",
-            },
-        ],
-    }
+        types.Part.from_bytes(
+            data=processed_image_a,
+            mime_type="image/jpeg",
+        ),
+        types.Part.from_bytes(
+            data=processed_image_a,
+            mime_type="image/jpeg",
+        ),
+    ]
 
-    return [user_message]
+    vis_a = None
+    vis_b = None
+    if debug:
+        vis_a = Image.open(BytesIO(base64.b64decode(processed_image_a)))
+        vis_b = Image.open(BytesIO(base64.b64decode(processed_image_b)))
+
+    return user_message, (vis_a, vis_b) if debug else None
 
 
 def parse_part_relation_msg(msg):
@@ -205,31 +205,3 @@ Be precise and only extract information that is explicitly stated in the message
         },
     ]
     return message
-
-
-# deprecated
-def part_description_msg(image_path, mask_path, parent_description, debug=True):
-    processed_image = process_image_for_description(
-        image_path,
-        mask_path,
-        debug=debug,
-        crop=True,
-        bbox=[641, 343, 754, 453],
-        padding_box=[-10, -10, 10, 10],
-    )
-
-    # Create the message structure for the API
-    user_message = {
-        "role": "user",
-        "content": [
-            {
-                "type": "text",
-                "text": f"The highlighted (as green) part in the image is a part of a {parent_description}. Please introduce the name and purpose of this part. If its purpose is too subtle, you can ignore the request of introducing its purpose. If there is any text on this component, also output the text. This is the image:",
-            },
-            {
-                "type": "image_url",
-                "image_url": f"data:image/jpeg;base64,{processed_image}",
-            },
-        ],
-    }
-    return [user_message]
