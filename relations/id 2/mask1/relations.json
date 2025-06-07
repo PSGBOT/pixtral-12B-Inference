@@ -1,0 +1,28 @@
+[
+    {
+        "parts": [
+            "mask1.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Tube Body",
+            "part2_name": "Tube Nozzle/Cap",
+            "kinematic_joints": [
+                {
+                    "joint_type": "revolute",
+                    "joint_movement_axis": "axial",
+                    "is_static": "controlled",
+                    "purpose": "Allows the nozzle/cap to rotate and seal or unseal the tube opening to dispense the cream or lotion.",
+                    "root": "0"
+                },
+                {
+                    "joint_type": "prismatic",
+                    "joint_movement_axis": "axial",
+                    "is_static": "static",
+                    "purpose": "Allows the nozzle/cap to screw on and off the tube body.",
+                    "root": "0"
+                }
+            ]
+        }
+    }
+]

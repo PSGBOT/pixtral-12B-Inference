@@ -1,0 +1,21 @@
+[
+    {
+        "parts": [
+            "mask1.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Cosmetic Bag",
+            "part2_name": "Table Surface",
+            "kinematic_joints": [
+                {
+                    "joint_type": "supported",
+                    "joint_movement_axis": "vertical",
+                    "is_static": "controlled",
+                    "purpose": "The base of the cosmetic bag rests on the surface.",
+                    "root": "1"
+                }
+            ]
+        }
+    }
+]

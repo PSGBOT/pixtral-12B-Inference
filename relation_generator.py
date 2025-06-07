@@ -5,9 +5,11 @@ from mistralai import Mistral
 from google import genai
 import json
 import argparse
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
+import textwrap
 from collections import defaultdict
 import numpy as np
+import re
 import time
 import random
 from config import VLM_SETTINGS, LLM_SETTINGS
@@ -17,6 +19,13 @@ from vlm_utils.message import crop_config
 
 class VLMRelationGenerator:
     def __init__(self, dataset_dir, src_image_dir, ouput_dir):
+        """EFFECT:
+            Initialize the vlm relation generator.
+        INPUT:
+            dataset_dir: dataset description json file
+            src_image_dir: dataset source image directory
+            output_dir: optional, output directort for the KAF json files
+        """
         self.dataset_dir = dataset_dir
         self.src_image_dir = src_image_dir
         self.dataset = {}
@@ -39,6 +48,7 @@ class VLMRelationGenerator:
         self.client = genai.Client(api_key=api_key)
 
     def merge_dicts(self, dicts):
+        """EFFECT: Merge multiple dicts into one"""
         merged = defaultdict(list)
         for d in dicts:
             for k, v in d.items():
@@ -46,6 +56,7 @@ class VLMRelationGenerator:
         return dict(merged)
 
     def load_dataset(self):
+        """EFFECT: Load dataset description json into dataset"""
         try:
             if not os.path.exists(self.dataset_dir):
                 print(f"Dataset file not found: {self.dataset_dir}")
@@ -74,7 +85,7 @@ class VLMRelationGenerator:
                     chat_response = self.client.models.generate_content(
                         model=self.vlm, contents=msg
                     )
-                    return {"response": chat_response.text}
+                    return json.loads(chat_response.text)
                 else:
                     print("using format")
                     chat_response = self.client.models.generate_content(
@@ -85,54 +96,7 @@ class VLMRelationGenerator:
                             "response_schema": response_format,
                         },
                     )
-                    return {"response": chat_response.text}
-
-            except Exception as e:
-                # Check if it's a rate limit error
-                if (
-                    "rate limit" in str(e).lower()
-                    or "too many requests" in str(e).lower()
-                ):
-                    if attempt < max_retries - 1:  # Don't sleep on the last attempt
-                        # Calculate exponential backoff with jitter
-                        delay = base_delay * (2**attempt) + random.uniform(0, 1)
-                        print(
-                            f"Rate limit exceeded. Retrying in {delay:.2f} seconds... (Attempt {attempt + 1}/{max_retries})"
-                        )
-                        time.sleep(delay)
-                    else:
-                        print(
-                            f"Failed after {max_retries} attempts due to rate limiting."
-                        )
-                        raise
-                else:
-                    # If it's not a rate limit error, re-raise the exception
-                    print(f"API error: {e}")
-                    raise
-
-    def infer_llm(self, msg, response_format=None):
-        max_retries = 5
-        base_delay = 2  # Base delay in seconds
-
-        for attempt in range(max_retries):
-            try:
-                if response_format == None:
-                    chat_response = self.client.chat.complete(
-                        model=self.llm,
-                        messages=msg,
-                        max_tokens=self.llm_max_tokens,
-                        temperature=self.llm_temperature,
-                    )
-                    return {"response": chat_response.choices[0].message.content}
-                else:
-                    chat_response = self.client.chat.parse(
-                        model=self.llm,
-                        messages=msg,
-                        response_format=response_format,
-                        max_tokens=self.llm_max_tokens,
-                        temperature=self.llm_temperature,
-                    )
-                    return json.loads(chat_response.choices[0].message.content)
+                    return json.loads(chat_response.text)
 
             except Exception as e:
                 # Check if it's a rate limit error
@@ -187,6 +151,8 @@ class VLMRelationGenerator:
         return res
 
     def generate_relation(self):
+        relations_store = defaultdict(lambda: defaultdict(list))
+        dump = bool(self.output_dir)
         for image_id in self.part_seg_dataset:
             image_res = self.part_seg_dataset[image_id]["masks"]
             for instance_seg in image_res:
@@ -245,7 +211,7 @@ class VLMRelationGenerator:
                         # Process all pairs for matching keys
                         for key in matching_keys:  # key is the directrory
                             for pair in pairs[key]:
-                                msg = vlm_message.part_relation_msg_for_KAF(
+                                msg, vis_img = vlm_message.part_relation_msg_for_KAF(
                                     src_img_path,
                                     pair[0],
                                     pair[1],
@@ -253,7 +219,7 @@ class VLMRelationGenerator:
                                         instance_seg
                                     ]["description"]["name"],
                                     crop_config=crop_config(
-                                        True,
+                                        False,
                                         bbox=image_res[instance_seg]["bbox"],
                                         padding_box=[-20, -20, 20, 20],
                                     ),
@@ -263,10 +229,64 @@ class VLMRelationGenerator:
                                     msg, KinematicRelationship
                                 )
                                 print(kinematic_desc)
+                                relations_store[image_id][instance_seg].append(
+                                    {
+                                        "parts": [
+                                            os.path.basename(pair[0]),
+                                            os.path.basename(pair[1]),
+                                        ],
+                                        "relation": kinematic_desc,
+                                    }
+                                )
+                                ## NOTE: combined is the pop-up image for this pair
+                                mask1 = vis_img[0]
+                                mask2 = vis_img[1]
+                                split_width = 4
+                                total_w = mask1.width + split_width + mask2.width
+                                max_h = max(mask1.height, mask2.height)
+                                combined = Image.new("RGBA", (total_w, max_h), "WHITE")
+                                combined.paste(mask1, (0, 0))
+                                draw = ImageDraw.Draw(combined)
+                                draw.rectangle(
+                                    [mask1.width, 0, mask1.width + split_width, max_h],
+                                    fill="white",
+                                )
+                                combined.paste(mask2, (mask1.width + split_width, 0))
+                                font = ImageFont.load_default()
+                                pad = 8
 
+                                lines = [f"{k}: {v}" for k, v in kinematic_desc.items()]
+
+                                line_h = 2 * int(font.getlength("A"))
+                                text_h = line_h * len(lines)
+
+                                total_h = max_h + text_h + 2 * pad
+                                old = combined
+                                combined = Image.new(
+                                    "RGBA", (total_w, total_h), "WHITE"
+                                )
+
+                                combined.paste(old, (0, 0))
+
+                                draw = ImageDraw.Draw(combined)
+                                y = max_h + pad
+                                for line in lines:
+                                    draw.text((pad, y), line, fill="black", font=font)
+                                    y += line_h
+
+                                combined.show()
+        if dump:
+            for img_id, inst_dict in relations_store.items():
+                for inst_seg, rel_list in inst_dict.items():
+                    out_dir = os.path.join(self.output_dir, img_id, inst_seg)
+                    os.makedirs(out_dir, exist_ok=True)
+                    out_path = os.path.join(out_dir, "relations.json")
+                    with open(out_path, "w") as f:
+                        json.dump(rel_list, f, indent=4)
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
             json.dump(self.part_seg_dataset, f, indent=4)
+            font.getsize
 
 
 if __name__ == "__main__":

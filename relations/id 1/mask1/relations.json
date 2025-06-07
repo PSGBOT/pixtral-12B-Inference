@@ -1,0 +1,163 @@
+[
+    {
+        "parts": [
+            "mask1.png",
+            "mask2.png"
+        ],
+        "relation": {
+            "part1_name": "Pump head",
+            "part2_name": "Bottle neck/Pump base",
+            "kinematic_joints": [
+                {
+                    "joint_type": "prismatic",
+                    "joint_movement_axis": "vertical",
+                    "is_static": "controlled",
+                    "purpose": "Allows the pump head to move up and down to dispense soap. The pump head moves down to draw soap from the container and moves up to dispense the soap.",
+                    "root": "1"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask1.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Pump head",
+            "part2_name": "Pump assembly body",
+            "kinematic_joints": [
+                {
+                    "joint_type": "prismatic",
+                    "joint_movement_axis": "vertical",
+                    "is_static": "controlled",
+                    "purpose": "The pump head slides vertically within the pump assembly body to draw and dispense soap.",
+                    "root": "1"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask2.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Pump Head",
+            "part2_name": "Dispenser body",
+            "kinematic_joints": [
+                {
+                    "joint_type": "revolute",
+                    "joint_movement_axis": "radial",
+                    "is_static": "controlled",
+                    "purpose": "The pump head rotates to activate the pump mechanism, dispensing soap.",
+                    "root": "1"
+                },
+                {
+                    "joint_type": "prismatic",
+                    "joint_movement_axis": "vertical",
+                    "is_static": "controlled",
+                    "purpose": "The pump head can move vertically along the axial direction of the pump to draw the liquid upward.",
+                    "root": "1"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask1.png",
+            "mask2.png"
+        ],
+        "relation": {
+            "part1_name": "Dispenser Body",
+            "part2_name": "Pump Mechanism",
+            "kinematic_joints": [
+                {
+                    "joint_type": "prismatic",
+                    "joint_movement_axis": "vertical",
+                    "is_static": "controlled",
+                    "purpose": "Allows the pump to move vertically to dispense soap.",
+                    "root": "0"
+                },
+                {
+                    "joint_type": "revolute",
+                    "joint_movement_axis": "axial",
+                    "is_static": "controlled",
+                    "purpose": "Allows the pump to rotate around its axis, possibly for locking or adjustment.",
+                    "root": "0"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask1.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Dispenser Body",
+            "part2_name": "Pump Mechanism Base",
+            "kinematic_joints": [
+                {
+                    "joint_type": "prismatic",
+                    "joint_movement_axis": "vertical",
+                    "is_static": "controlled",
+                    "purpose": "Allows the pump mechanism to move vertically to draw soap from the dispenser body",
+                    "root": "0"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask2.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Soap Dispenser Bottle",
+            "part2_name": "Soap Dispenser Pump Head",
+            "kinematic_joints": [
+                {
+                    "joint_type": "revolute",
+                    "joint_movement_axis": "axial",
+                    "is_static": "controlled",
+                    "purpose": "The pump head rotates about the bottle's axis to prime and dispense the soap.",
+                    "root": "0"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask1.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Pump Head",
+            "part2_name": "Bottle Neck",
+            "kinematic_joints": [
+                {
+                    "joint_type": "revolute",
+                    "joint_movement_axis": "vertical",
+                    "is_static": "controlled",
+                    "purpose": "To allow the pump head to be pressed down, dispensing soap.",
+                    "root": "1"
+                },
+                {
+                    "joint_type": "prismatic",
+                    "joint_movement_axis": "vertical",
+                    "is_static": "controlled",
+                    "purpose": "To allow the pump head to be pressed down, dispensing soap.",
+                    "root": "1"
+                },
+                {
+                    "joint_type": "press",
+                    "joint_movement_axis": "axial",
+                    "is_static": "controlled",
+                    "purpose": "Provides a tight seal while still allowing controlled movement for pumping.",
+                    "root": "1"
+                }
+            ]
+        }
+    }
+]

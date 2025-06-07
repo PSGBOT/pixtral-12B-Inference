@@ -179,3 +179,5 @@ config/custom_cfg.py
 # custom script
 script/
 *.ipynb
+*.txt
+.vscode/

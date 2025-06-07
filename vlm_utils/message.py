@@ -4,6 +4,9 @@ from vlm_utils.image_process import (
     crop_config,
 )
 from google.genai import types
+import base64
+from io import BytesIO
+from PIL import Image
 
 
 def instance_description_msg(
@@ -87,7 +90,7 @@ def part_relation_msg_for_KAF(
         mask_level=0.15,
         highlight_level=0.6,
         crop_config=crop_config,
-        debug=debug,
+        debug=False,  # NOTE: Change this to debug if separated images are needed
     )
 
     # Process the image with the second mask
@@ -97,7 +100,7 @@ def part_relation_msg_for_KAF(
         mask_level=0.15,
         highlight_level=0.6,
         crop_config=crop_config,
-        debug=debug,
+        debug=False,  # NOTE: Change this to debug if separated images are needed
     )
 
     # Create the prompt message structure for the API
@@ -111,7 +114,7 @@ Your task is to analyze the precise kinematic relationship between these two hig
 
 1. Identify each highlighted part with its technical name.
 
-2. Determine the possible types of kinematic joint or connection between these parts, using one or more of these standard mechanical engineering terms:
+2. Determine all possible types of kinematic joint or connection between these parts, using one or more of these standard mechanical engineering terms:
    - fixed: Parts are firmly attached with no relative movement
    - revolute: Parts rotate relative to each other around a single axis
    - prismatic: Parts slide linearly relative to each other along a single axis
@@ -122,7 +125,7 @@ Your task is to analyze the precise kinematic relationship between these two hig
    - supported: One part bears the weight of the other without rigid connection
    - unrelated: Parts are not directly connected or attached to each other
 
-3. Specify the exact axis or direction of movement, using the following standard terms:
+3. Specify the all possible axis or direction of movement, using the following standard terms:
     - vertical
     - horizontal
     - radial
@@ -158,7 +161,13 @@ If multiple joint types exist between these parts, list each one separately usin
         ),
     ]
 
-    return user_message
+    vis_a = None
+    vis_b = None
+    if debug:
+        vis_a = Image.open(BytesIO(base64.b64decode(processed_image_a)))
+        vis_b = Image.open(BytesIO(base64.b64decode(processed_image_b)))
+
+    return user_message, (vis_a, vis_b) if debug else None
 
 
 def parse_part_relation_msg(msg):

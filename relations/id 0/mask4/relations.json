@@ -1,0 +1,21 @@
+[
+    {
+        "parts": [
+            "mask1.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Saucepan Body",
+            "part2_name": "Saucepan Lid",
+            "kinematic_joints": [
+                {
+                    "joint_type": "supported",
+                    "joint_movement_axis": "vertical",
+                    "is_static": "controlled",
+                    "purpose": "Allows the lid to rest on top of the saucepan to contain heat and steam during cooking, while also being easily removable.",
+                    "root": "0"
+                }
+            ]
+        }
+    }
+]

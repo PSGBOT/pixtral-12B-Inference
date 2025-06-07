@@ -1,0 +1,116 @@
+[
+    {
+        "parts": [
+            "mask1.png",
+            "mask2.png"
+        ],
+        "relation": {
+            "part1_name": "Cosmetic Bag Body",
+            "part2_name": "Zipper Track",
+            "kinematic_joints": [
+                {
+                    "joint_type": "fixed",
+                    "joint_movement_axis": "unspecified",
+                    "is_static": "static",
+                    "purpose": "The zipper track is permanently attached to the cosmetic bag body to provide a secure closure.",
+                    "root": "0"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask1.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Cosmetic Bag Body",
+            "part2_name": "Zipper Track",
+            "kinematic_joints": [
+                {
+                    "joint_type": "fixed",
+                    "joint_movement_axis": "unspecified",
+                    "is_static": "static",
+                    "purpose": "Securing the zipper track to the cosmetic bag body, allowing the zipper slider to move along the track to open and close the bag.",
+                    "root": "0"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask2.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Cosmetic Bag Top Panel",
+            "part2_name": "Zipper",
+            "kinematic_joints": [
+                {
+                    "joint_type": "revolute",
+                    "joint_movement_axis": "axial",
+                    "is_static": "controlled",
+                    "purpose": "To open and close the cosmetic bag",
+                    "root": "0"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask1.png",
+            "mask2.png"
+        ],
+        "relation": {
+            "part1_name": "Cosmetic Bag Body",
+            "part2_name": "Cosmetic Bag Zipper",
+            "kinematic_joints": [
+                {
+                    "joint_type": "revolute",
+                    "joint_movement_axis": "axial",
+                    "is_static": "controlled",
+                    "purpose": "Allows the bag to be opened and closed by rotating along the edges of the zipper, creating an access point to the inside.",
+                    "root": "0"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask1.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Cosmetic Bag Body",
+            "part2_name": "Cosmetic Bag Body Zipper Fabric",
+            "kinematic_joints": [
+                {
+                    "joint_type": "fixed",
+                    "joint_movement_axis": "unspecified",
+                    "is_static": "static",
+                    "purpose": "To permanently connect the zipper fabric to the cosmetic bag body, creating a secure closure mechanism.",
+                    "root": "0"
+                }
+            ]
+        }
+    },
+    {
+        "parts": [
+            "mask2.png",
+            "mask0.png"
+        ],
+        "relation": {
+            "part1_name": "Cosmetic Bag Body",
+            "part2_name": "Zipper",
+            "kinematic_joints": [
+                {
+                    "joint_type": "revolute",
+                    "joint_movement_axis": "axial",
+                    "is_static": "controlled",
+                    "purpose": "To open and close the cosmetic bag by allowing the zipper to move around the edge of the bag.",
+                    "root": "0"
+                }
+            ]
+        }
+    }
+]
