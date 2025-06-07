@@ -2,6 +2,7 @@ from os.path import isfile
 import vlm_utils.message as vlm_message
 import os
 from mistralai import Mistral
+from google import genai
 import json
 import argparse
 from PIL import Image
@@ -22,7 +23,7 @@ class VLMRelationGenerator:
         self.part_seg_dataset = {}
         self.output_dir = ouput_dir
 
-        api_key = os.environ.get("MISTRAL_API_KEY")
+        api_key = os.environ.get("GENAI_API_KEY")
         if not api_key:
             print("Error: MISTRAL_API_KEY environment variable not set.")
             exit(1)
@@ -35,7 +36,7 @@ class VLMRelationGenerator:
         self.llm_temperature = LLM_SETTINGS["temperature"]
         print(f"Using model: {self.vlm}")
         # Initialize the Mistral client
-        self.client = Mistral(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
 
     def merge_dicts(self, dicts):
         merged = defaultdict(list)
@@ -70,22 +71,21 @@ class VLMRelationGenerator:
         for attempt in range(max_retries):
             try:
                 if response_format == None:
-                    chat_response = self.client.chat.complete(
-                        model=self.vlm,
-                        messages=msg,
-                        max_tokens=self.vlm_max_tokens,
-                        temperature=self.vlm_temperature,
+                    chat_response = self.client.models.generate_content(
+                        model=self.vlm, contents=msg
                     )
-                    return {"response": chat_response.choices[0].message.content}
+                    return {"response": chat_response.text}
                 else:
-                    chat_response = self.client.chat.parse(
+                    print("using format")
+                    chat_response = self.client.models.generate_content(
                         model=self.vlm,
-                        messages=msg,
-                        response_format=response_format,
-                        max_tokens=self.vlm_max_tokens,
-                        temperature=self.vlm_temperature,
+                        contents=msg,
+                        config={
+                            "response_mime_type": "application/json",
+                            "response_schema": response_format,
+                        },
                     )
-                    return json.loads(chat_response.choices[0].message.content)
+                    return {"response": chat_response.text}
 
             except Exception as e:
                 # Check if it's a rate limit error
@@ -215,23 +215,16 @@ class VLMRelationGenerator:
                         )
 
                         # first generate dense description
-                        instance_desc = self.infer_vlm(msg)
-                        # then use llm to parse the description into json
-                        structured_desc = self.infer_llm(
-                            vlm_message.parse_instance_description_msg(
-                                instance_desc["response"]
-                            ),
-                            response_format=Instance,
-                        )
+                        instance_desc = self.infer_vlm(msg, Instance)
                         # process validity
-                        if structured_desc["valid"] == "Yes":
-                            structured_desc["valid"] = True
+                        if instance_desc["valid"] == "Yes":
+                            instance_desc["valid"] = True
                         else:
-                            structured_desc = {"valid": False}
+                            instance_desc = {"valid": False}
                         self.part_seg_dataset[image_id]["masks"][instance_seg][
                             "description"
-                        ] = structured_desc
-                        print(structured_desc)
+                        ] = instance_desc
+                        print(instance_desc)
                     else:
                         print("existing description, skipping vlm")
 
@@ -266,15 +259,10 @@ class VLMRelationGenerator:
                                     ),
                                     debug=True,
                                 )
-                                kinematic_desc = self.infer_vlm(msg)
-                                print(kinematic_desc)
-                                structured_kinematic_desc = self.infer_llm(
-                                    vlm_message.parse_part_relation_msg(
-                                        kinematic_desc["response"]
-                                    ),
-                                    KinematicRelationship,
+                                kinematic_desc = self.infer_vlm(
+                                    msg, KinematicRelationship
                                 )
-                                print(structured_kinematic_desc)
+                                print(kinematic_desc)
 
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
