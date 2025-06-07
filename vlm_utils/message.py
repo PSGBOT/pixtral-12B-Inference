@@ -1,4 +1,4 @@
-from pixtral_utils.image_process import (
+from vlm_utils.image_process import (
     process_image_for_description,
     encode_image,
     crop_config,

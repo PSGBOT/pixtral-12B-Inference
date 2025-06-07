@@ -1,5 +1,5 @@
 from os.path import isfile
-import pixtral_utils.message as vlm_message
+import vlm_utils.message as vlm_message
 import os
 from mistralai import Mistral
 import json
@@ -10,8 +10,8 @@ import numpy as np
 import time
 import random
 from config import VLM_SETTINGS, LLM_SETTINGS
-from pixtral_utils.output_structure import Instance, Part, KinematicRelationship
-from pixtral_utils.message import crop_config
+from vlm_utils.output_structure import Instance, Part, KinematicRelationship
+from vlm_utils.message import crop_config
 
 
 class VLMRelationGenerator:
