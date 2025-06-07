@@ -177,7 +177,7 @@ class VLMRelationGenerator:
                                 bbox=image_res[instance_seg]["bbox"],
                                 padding_box=[-20, -20, 20, 20],
                             ),
-                            debug=False,
+                            debug=True,
                         )
 
                         # first generate dense description
@@ -286,7 +286,6 @@ class VLMRelationGenerator:
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
             json.dump(self.part_seg_dataset, f, indent=4)
-            font.getsize
 
 
 if __name__ == "__main__":

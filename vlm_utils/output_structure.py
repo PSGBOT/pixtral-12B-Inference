@@ -3,8 +3,13 @@ from typing import Optional, List
 import enum
 
 
+class YesOrNo(enum.Enum):
+    NO = "No"
+    YES = "Yes"
+
+
 class Instance(BaseModel):
-    valid: str
+    valid: YesOrNo
     name: Optional[str] = None
     feature: Optional[List[str]] = Field(default_factory=list)
     usage: Optional[List[str]] = Field(default_factory=list)

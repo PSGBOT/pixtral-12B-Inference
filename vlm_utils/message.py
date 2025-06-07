@@ -18,6 +18,7 @@ def instance_description_msg(
     processed_image = process_image_for_description(
         image_path,
         mask_path,
+        mask_level=0.3,
         crop_config=crop_config,
         debug=debug,
     )
@@ -25,13 +26,11 @@ def instance_description_msg(
     # Create the message structure for the API
     user_message = (
         [
-            {
-                "type": "text",
-                "text": """Focus on the area highlighted in green in the image.
+            """Focus only on the area highlighted in green in the image.
 
 Step 1: Determine if the highlighted area represents a distinct, identifiable object or instance:
-- If the highlighted area is clearly a distinct object, proceed to Step 2.
-- If the highlighted area is abstract, ambiguous, or you cannot confidently identify it as a specific object (e.g., part of background, texture, partial view), respond with "Valid: No".
+- If the highlighted area is clearly a distinct foreground object that is interactable, proceed to Step 2.
+- Else, respond with "Valid: No".
 
 Step 2: If the highlighted area is a distinct object, provide:
 1. The specific name of the object (be precise and use technical terms when appropriate)
@@ -41,11 +40,10 @@ Step 2: If the highlighted area is a distinct object, provide:
 
 Remember, if you're uncertain about the highlighted area being a distinct object, respond only with "Valid: No".
 """,
-            },
-            {
-                "type": "image_url",
-                "image_url": f"data:image/jpeg;base64,{processed_image}",
-            },
+            types.Part.from_bytes(
+                data=processed_image,
+                mime_type="image/jpeg",
+            ),
         ],
     )
     return user_message
