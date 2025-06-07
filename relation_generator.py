@@ -266,21 +266,7 @@ class VLMRelationGenerator:
                         # Process all pairs for matching keys
                         for key in matching_keys:  # key is the directrory
                             for pair in pairs[key]:
-                                mask1 = Image.open(pair[0]).convert("RGBA")
-                                mask2 = Image.open(pair[1]).convert("RGBA")
-                                ## NOTE: combined is the pop-up image for this pair
-                                split_width = 4
-                                total_w = mask1.width + split_width + mask2.width
-                                max_h = max(mask1.height, mask2.height)
-                                combined = Image.new("RGBA", (total_w, max_h), "WHITE")
-                                combined.paste(mask1, (0, 0))
-                                draw = ImageDraw.Draw(combined)
-                                draw.rectangle(
-                                    [mask1.width, 0, mask1.width + split_width, max_h],
-                                    fill="white"
-                                )
-                                combined.paste(mask2, (mask1.width + split_width, 0))
-                                msg = vlm_message.part_relation_msg_for_KAF(
+                                msg, vis_img = vlm_message.part_relation_msg_for_KAF(
                                     src_img_path,
                                     pair[0],
                                     pair[1],
@@ -292,7 +278,7 @@ class VLMRelationGenerator:
                                         bbox=image_res[instance_seg]["bbox"],
                                         padding_box=[-20, -20, 20, 20],
                                     ),
-                                    debug=False,
+                                    debug=True,
                                 )
                                 kinematic_desc = self.infer_vlm(msg)
                                 print(kinematic_desc)
@@ -307,7 +293,20 @@ class VLMRelationGenerator:
                                     "parts": [os.path.basename(pair[0]), os.path.basename(pair[1])],
                                     "relation": structured_kinematic_desc,
                                 })
-                                
+                                ## NOTE: combined is the pop-up image for this pair
+                                mask1 = vis_img[0]
+                                mask2 = vis_img[1]
+                                split_width = 4
+                                total_w = mask1.width + split_width + mask2.width
+                                max_h = max(mask1.height, mask2.height)
+                                combined = Image.new("RGBA", (total_w, max_h), "WHITE")
+                                combined.paste(mask1, (0, 0))
+                                draw = ImageDraw.Draw(combined)
+                                draw.rectangle(
+                                    [mask1.width, 0, mask1.width + split_width, max_h],
+                                    fill="white"
+                                )
+                                combined.paste(mask2, (mask1.width + split_width, 0))
                                 font = ImageFont.load_default()
                                 pad = 8
 
