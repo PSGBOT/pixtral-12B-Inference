@@ -5,6 +5,7 @@ from mistralai import Mistral
 import json
 import argparse
 from PIL import Image, ImageDraw, ImageFont
+import textwrap
 from collections import defaultdict
 import numpy as np
 import re
@@ -267,20 +268,16 @@ class VLMRelationGenerator:
                             for pair in pairs[key]:
                                 mask1 = Image.open(pair[0]).convert("RGBA")
                                 mask2 = Image.open(pair[1]).convert("RGBA")
-
+                                ## NOTE: combined is the pop-up image for this pair
                                 split_width = 4
-                                split_color = "white"
                                 total_w = mask1.width + split_width + mask2.width
-                                max_h   = max(mask1.height, mask2.height)
-
+                                max_h = max(mask1.height, mask2.height)
                                 combined = Image.new("RGBA", (total_w, max_h), "WHITE")
-
                                 combined.paste(mask1, (0, 0))
-
                                 draw = ImageDraw.Draw(combined)
                                 draw.rectangle(
                                     [mask1.width, 0, mask1.width + split_width, max_h],
-                                    fill=split_color
+                                    fill="white"
                                 )
                                 combined.paste(mask2, (mask1.width + split_width, 0))
                                 msg = vlm_message.part_relation_msg_for_KAF(
@@ -310,14 +307,27 @@ class VLMRelationGenerator:
                                     "parts": [os.path.basename(pair[0]), os.path.basename(pair[1])],
                                     "relation": structured_kinematic_desc,
                                 })
-                                caption = str(structured_kinematic_desc)
+                                
                                 font = ImageFont.load_default()
                                 pad = 8
 
+                                lines = [f"{k}: {v}" for k, v in structured_kinematic_desc.items()]
+
+                                line_h = 2*int(font.getlength("A"))
+                                text_h = line_h * len(lines)
+
+                                total_h = max_h + text_h + 2*pad
+                                old = combined
+                                combined = Image.new("RGBA", (total_w, total_h), "WHITE")
+
+                                combined.paste(old, (0, 0))
+
                                 draw = ImageDraw.Draw(combined)
-                                text_x = pad
-                                text_y = combined.height + pad
-                                draw.text((text_x, text_y), caption, fill="white", font=font)
+                                y = max_h + pad
+                                for line in lines:
+                                    draw.text((pad, y), line, fill="black", font=font)
+                                    y += line_h
+
                                 combined.show()
         if dump:
             for img_id, inst_dict in relations_store.items():
@@ -330,6 +340,7 @@ class VLMRelationGenerator:
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
             json.dump(self.part_seg_dataset, f, indent=4)
+            font.getsize
 
 if __name__ == "__main__":
     # get dataset dir and src image dir from argument
