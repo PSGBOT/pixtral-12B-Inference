@@ -4,7 +4,7 @@ import os
 from mistralai import Mistral
 import json
 import argparse
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from collections import defaultdict
 import numpy as np
 import re
@@ -17,7 +17,7 @@ from pixtral_utils.message import crop_config
 
 class VLMRelationGenerator:
     def __init__(self, dataset_dir, src_image_dir, ouput_dir):
-        """EFFECT:
+        """ EFFECT:
                 Initialize the vlm relation generator.
             INPUT: 
                 dataset_dir: dataset description json file
@@ -121,6 +121,7 @@ class VLMRelationGenerator:
                     raise
 
     def infer_llm(self, msg, response_format=None):
+        """EFFECT: Generate the llm responses for joints between a pair"""
         max_retries = 5
         base_delay = 2  # Base delay in seconds
 
@@ -197,6 +198,8 @@ class VLMRelationGenerator:
         return res
 
     def generate_relation(self):
+        relations_store = defaultdict(lambda: defaultdict(list))
+        dump = bool(self.output_dir)
         for image_id in self.part_seg_dataset:
             image_res = self.part_seg_dataset[image_id]["masks"]
             for instance_seg in image_res:
@@ -262,6 +265,24 @@ class VLMRelationGenerator:
                         # Process all pairs for matching keys
                         for key in matching_keys:  # key is the directrory
                             for pair in pairs[key]:
+                                mask1 = Image.open(pair[0]).convert("RGBA")
+                                mask2 = Image.open(pair[1]).convert("RGBA")
+
+                                split_width = 4
+                                split_color = "white"
+                                total_w = mask1.width + split_width + mask2.width
+                                max_h   = max(mask1.height, mask2.height)
+
+                                combined = Image.new("RGBA", (total_w, max_h), "WHITE")
+
+                                combined.paste(mask1, (0, 0))
+
+                                draw = ImageDraw.Draw(combined)
+                                draw.rectangle(
+                                    [mask1.width, 0, mask1.width + split_width, max_h],
+                                    fill=split_color
+                                )
+                                combined.paste(mask2, (mask1.width + split_width, 0))
                                 msg = vlm_message.part_relation_msg_for_KAF(
                                     src_img_path,
                                     pair[0],
@@ -270,11 +291,11 @@ class VLMRelationGenerator:
                                         instance_seg
                                     ]["description"]["name"],
                                     crop_config=crop_config(
-                                        True,
+                                        False,
                                         bbox=image_res[instance_seg]["bbox"],
                                         padding_box=[-20, -20, 20, 20],
                                     ),
-                                    debug=True,
+                                    debug=False,
                                 )
                                 kinematic_desc = self.infer_vlm(msg)
                                 print(kinematic_desc)
@@ -285,7 +306,27 @@ class VLMRelationGenerator:
                                     KinematicRelationship,
                                 )
                                 print(structured_kinematic_desc)
+                                relations_store[image_id][instance_seg].append({
+                                    "parts": [os.path.basename(pair[0]), os.path.basename(pair[1])],
+                                    "relation": structured_kinematic_desc,
+                                })
+                                caption = str(structured_kinematic_desc)
+                                font = ImageFont.load_default()
+                                pad = 8
 
+                                draw = ImageDraw.Draw(combined)
+                                text_x = pad
+                                text_y = combined.height + pad
+                                draw.text((text_x, text_y), caption, fill="white", font=font)
+                                combined.show()
+        if dump:
+            for img_id, inst_dict in relations_store.items():
+                for inst_seg, rel_list in inst_dict.items():
+                    out_dir = os.path.join(self.output_dir, img_id, inst_seg)
+                    os.makedirs(out_dir, exist_ok=True)
+                    out_path = os.path.join(out_dir, "relations.json")
+                    with open(out_path, "w") as f:
+                        json.dump(rel_list, f, indent=4)
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
             json.dump(self.part_seg_dataset, f, indent=4)
