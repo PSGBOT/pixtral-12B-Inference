@@ -18,7 +18,7 @@ def instance_description_msg(
     processed_image = process_image_for_description(
         image_path,
         mask_path,
-        mask_level=0.3,
+        mask_level=0.8,
         crop_config=crop_config,
         debug=debug,
     )
@@ -28,8 +28,8 @@ def instance_description_msg(
         [
             """Focus only on the area highlighted in green in the image.
 
-Step 1: Determine if the highlighted area represents a distinct, identifiable object or instance:
-- If the highlighted area is clearly a distinct foreground object that is interactable, proceed to Step 2.
+Step 1: Determine if the highlighted area represents a distinct, identifiable foreground instance:
+- If the highlighted area is clearly a distinct foreground instance that is interactable, proceed to Step 2.
 - Else, respond with "Valid: No".
 
 Step 2: If the highlighted area is a distinct object, provide:
