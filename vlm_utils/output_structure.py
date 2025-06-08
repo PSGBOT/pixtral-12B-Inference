@@ -25,10 +25,7 @@ class KinematicJointType(enum.Enum):
     fixed = "fixed"
     revolute = "revolute"
     prismatic = "prismatic"
-    cylindrical = "cylindrical"
     spherical = "spherical"
-    planar = "planar"
-    press = "press"
     supported = "supported"
     unrelated = "unrelated"
 

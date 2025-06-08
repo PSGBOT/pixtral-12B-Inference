@@ -105,9 +105,6 @@ def part_relation_msg_for_KAF(
     user_message = [
         f"""You are an expert mechanical engineer specializing in kinematic analysis of mechanical systems. I will show you two images of a {parent_description}. In each image, a different part is highlighted in green.
 
-Image 0: The first highlighted part (Part 0).
-Image 1: The second highlighted part (Part 1).
-
 Your task is to analyze the precise kinematic relationship between these two highlighted parts (no other parts should be involved):
 
 1. Identify each highlighted part with its technical name.
@@ -116,18 +113,9 @@ Your task is to analyze the precise kinematic relationship between these two hig
    - fixed: Parts are firmly attached with no relative movement
    - revolute: Parts rotate relative to each other around a single axis
    - prismatic: Parts slide linearly relative to each other along a single axis
-   - cylindrical: Parts can both rotate and slide along the same axis
    - spherical: Parts can rotate around a common point in any direction
-   - planar: Parts can translate in two dimensions and rotate around one axis
-   - press: One part can be pressed into another with spring resistance
    - supported: One part bears the weight of the other without rigid connection
    - unrelated: Parts are not directly connected or attached to each other
-
-3. Specify the all possible axis or direction of movement, using the following standard terms:
-    - vertical
-    - horizontal
-    - radial
-    - axial
 
 4. Determine whether the connection is:
    - static: Designed to prevent movement
@@ -143,8 +131,8 @@ Your task is to analyze the precise kinematic relationship between these two hig
    - The part that would typically be considered the "base" in engineering terms
 
    After analysis, specify exactly one of these answers:
-   - "0" if the part in image 0 is the kinematic root
-   - "1" if the part in image 1 is the kinematic root
+   - "0" if the part in first image is the kinematic root
+   - "1" if the part in second image is the kinematic root
    - "neither" if both parts move equally relative to each other or if they are both attached to a third part that serves as the actual root
 
 If multiple joint types exist between these parts, list each one separately using the format above.
@@ -166,42 +154,3 @@ If multiple joint types exist between these parts, list each one separately usin
         vis_b = Image.open(BytesIO(base64.b64decode(processed_image_b)))
 
     return user_message, (vis_a, vis_b) if debug else None
-
-
-def parse_part_relation_msg(msg):
-    message = [
-        {
-            "role": "system",
-            "content": """Extract the kinematic relationship information between the parts described in the message.
-
-Your task is to identify and structure the kinematic joint information according to these rules:
-
-1. Identify valid kinematic joint types in the text. Only use these standard terms:
-   - fixed
-   - revolute
-   - prismatic
-   - cylindrical
-   - spherical
-   - planar
-   - press
-   - supported
-   - unrelated
-
-2. For each joint identified, extract:
-   - joint_type: The type of joint from the standard list above
-   - joint_movement_axis: The axis or direction of movement (e.g., vertical, horizontal, radial)
-   - is_static: Whether the joint is static or allows movement
-   - purpose: The functional purpose of this joint
-
-3. If multiple joint types exist between the parts, include each as a separate object in the kinematic_joints array.
-
-4. For the root part, use part id (`0` or `1`), `0` for the first image, `1` for the second image.
-
-Be precise and only extract information that is explicitly stated in the message.""",
-        },
-        {
-            "role": "user",
-            "content": msg,
-        },
-    ]
-    return message
