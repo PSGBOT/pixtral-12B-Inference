@@ -4,14 +4,19 @@ Contains paths and settings used across the project.
 """
 
 # Model settings
-VLM_SETTINGS = {
-    "model_name": "gemini-2.5-flash-preview-05-20",
+FLASH_VLM_SETTINGS = {
+    "model_name": "gemini-2.0-flash",
+    "max_tokens": 4096,
+    "temperature": 1,
+}
+SOTA_VLM_SETTINGS = {
+    "model_name": "gemini-2.0-flash",
     "max_tokens": 4096,
     "temperature": 1,
 }
 
 LLM_SETTINGS = {
-    "model_name": "gemini-2.5-flash-preview-05-20",
+    "model_name": "gemini-2.0-flash",
     "max_tokens": 4096,
     "temperature": 0.3,
 }

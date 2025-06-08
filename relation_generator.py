@@ -12,7 +12,7 @@ import numpy as np
 import re
 import time
 import random
-from config import VLM_SETTINGS, LLM_SETTINGS
+from config import FLASH_VLM_SETTINGS, LLM_SETTINGS, SOTA_VLM_SETTINGS
 from vlm_utils.output_structure import Instance, Part, KinematicRelationship
 from vlm_utils.message import crop_config
 
@@ -37,13 +37,16 @@ class VLMRelationGenerator:
             print("Error: MISTRAL_API_KEY environment variable not set.")
             exit(1)
         # Get model settings from config
-        self.vlm = VLM_SETTINGS["model_name"]
-        self.vlm_max_tokens = VLM_SETTINGS["max_tokens"]
-        self.vlm_temperature = VLM_SETTINGS["temperature"]
+        self.flash_vlm = FLASH_VLM_SETTINGS["model_name"]
+        self.flash_vlm_max_tokens = FLASH_VLM_SETTINGS["max_tokens"]
+        self.flash_vlm_temperature = FLASH_VLM_SETTINGS["temperature"]
+        self.sota_vlm = SOTA_VLM_SETTINGS["model_name"]
+        self.sota_vlm_max_tokens = SOTA_VLM_SETTINGS["max_tokens"]
+        self.sota_vlm_temperature = SOTA_VLM_SETTINGS["temperature"]
         self.llm = LLM_SETTINGS["model_name"]
         self.llm_max_tokens = LLM_SETTINGS["max_tokens"]
         self.llm_temperature = LLM_SETTINGS["temperature"]
-        print(f"Using model: {self.vlm}")
+        print(f"Using model: {self.flash_vlm}")
         # Initialize the Mistral client
         self.client = genai.Client(api_key=api_key)
 
@@ -75,7 +78,7 @@ class VLMRelationGenerator:
             print(f"Error loading dataset: {e}")
             return False
 
-    def infer_vlm(self, msg, response_format=None):
+    def infer_vlm(self, msg, response_format=None, vlm=0):
         max_retries = 5
         base_delay = 2  # Base delay in seconds
 
@@ -83,13 +86,14 @@ class VLMRelationGenerator:
             try:
                 if response_format == None:
                     chat_response = self.client.models.generate_content(
-                        model=self.vlm, contents=msg
+                        model=self.flash_vlm if vlm == 0 else self.sota_vlm,
+                        contents=msg,
                     )
                     return json.loads(chat_response.text)
                 else:
                     print("using format")
                     chat_response = self.client.models.generate_content(
-                        model=self.vlm,
+                        model=self.flash_vlm if vlm == 0 else self.sota_vlm,
                         contents=msg,
                         config={
                             "response_mime_type": "application/json",
@@ -181,7 +185,7 @@ class VLMRelationGenerator:
                         )
 
                         # first generate dense description
-                        instance_desc = self.infer_vlm(msg, Instance)
+                        instance_desc = self.infer_vlm(msg, Instance, vlm=1)
                         # process validity
                         if instance_desc["valid"] == "Yes":
                             instance_desc["valid"] = True
