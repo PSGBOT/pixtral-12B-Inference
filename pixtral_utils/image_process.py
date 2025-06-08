@@ -4,6 +4,7 @@ from PIL import Image
 from io import BytesIO
 import cv2
 import time  # Import time module for performance measurement
+from PIL import Image, ImageDraw, ImageFont
 import os
 import json
 
@@ -164,3 +165,39 @@ def process_image_for_description(
     except Exception as e:
         print(f"Error processing image: {e}")
         return None
+
+def combined_image_present(vis_img, structured_kinematic_desc):
+    mask1 = vis_img[0]
+    mask2 = vis_img[1]
+    split_width = 4
+    total_w = mask1.width + split_width + mask2.width
+    max_h = max(mask1.height, mask2.height)
+    combined = Image.new("RGBA", (total_w, max_h), "WHITE")
+    combined.paste(mask1, (0, 0))
+    draw = ImageDraw.Draw(combined)
+    draw.rectangle(
+        [mask1.width, 0, mask1.width + split_width, max_h],
+        fill="white"
+    )
+    combined.paste(mask2, (mask1.width + split_width, 0))
+    font = ImageFont.load_default()
+    pad = 8
+
+    lines = [f"{k}: {v}" for k, v in structured_kinematic_desc.items()]
+
+    line_h = 2*int(font.getlength("A"))
+    text_h = line_h * len(lines)
+
+    total_h = max_h + text_h + 2*pad
+    old = combined
+    combined = Image.new("RGBA", (total_w, total_h), "WHITE")
+
+    combined.paste(old, (0, 0))
+
+    draw = ImageDraw.Draw(combined)
+    y = max_h + pad
+    for line in lines:
+        draw.text((pad, y), line, fill="black", font=font)
+        y += line_h
+
+    combined.show()

@@ -1,20 +1,15 @@
-from os.path import isfile
-import pixtral_utils.message as vlm_message
 import os
 from mistralai import Mistral
 import json
 import argparse
-from PIL import Image, ImageDraw, ImageFont
-import textwrap
 from collections import defaultdict
-import numpy as np
-import re
 import time
 import random
 from config import VLM_SETTINGS, LLM_SETTINGS
 from pixtral_utils.output_structure import Instance, Part, KinematicRelationship
 from pixtral_utils.message import crop_config
-
+from pixtral_utils.image_process import combined_image_present
+import pixtral_utils.message as vlm_message
 
 class VLMRelationGenerator:
     def __init__(self, dataset_dir, src_image_dir, ouput_dir):
@@ -293,41 +288,8 @@ class VLMRelationGenerator:
                                     "paths": [pair[0], pair[1]],
                                     "relation": structured_kinematic_desc
                                 })
-                                ## NOTE: combined is the pop-up image for this pair
-                                mask1 = vis_img[0]
-                                mask2 = vis_img[1]
-                                split_width = 4
-                                total_w = mask1.width + split_width + mask2.width
-                                max_h = max(mask1.height, mask2.height)
-                                combined = Image.new("RGBA", (total_w, max_h), "WHITE")
-                                combined.paste(mask1, (0, 0))
-                                draw = ImageDraw.Draw(combined)
-                                draw.rectangle(
-                                    [mask1.width, 0, mask1.width + split_width, max_h],
-                                    fill="white"
-                                )
-                                combined.paste(mask2, (mask1.width + split_width, 0))
-                                font = ImageFont.load_default()
-                                pad = 8
-
-                                lines = [f"{k}: {v}" for k, v in structured_kinematic_desc.items()]
-
-                                line_h = 2*int(font.getlength("A"))
-                                text_h = line_h * len(lines)
-
-                                total_h = max_h + text_h + 2*pad
-                                old = combined
-                                combined = Image.new("RGBA", (total_w, total_h), "WHITE")
-
-                                combined.paste(old, (0, 0))
-
-                                draw = ImageDraw.Draw(combined)
-                                y = max_h + pad
-                                for line in lines:
-                                    draw.text((pad, y), line, fill="black", font=font)
-                                    y += line_h
-
-                                combined.show()
+                                combined_image_present(vis_img, structured_kinematic_desc)
+                                
         if dump:
             for img_id in relations_store:
                 for inst_id in relations_store[img_id]:
