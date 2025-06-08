@@ -200,16 +200,15 @@ class VLMRelationGenerator:
 
     def generate_relation(self):
         relations_store = defaultdict(lambda: defaultdict(list))
+        root = os.path.dirname(self.dataset_dir)
         dump = bool(self.output_dir)
         for image_id in self.part_seg_dataset:
             image_res = self.part_seg_dataset[image_id]["masks"]
             for instance_seg in image_res:
                 if "children" in image_res[instance_seg]:
-                    p_mask_dir = os.path.join(
-                        os.path.split(self.dataset_dir)[0],
-                        image_id,
-                        image_res[instance_seg]["path"],
-                    )
+                    seg = image_res[instance_seg]
+                    p_mask_dir = os.path.join(root, image_id, seg["path"])
+
 
                     children_dir, _ = os.path.splitext(p_mask_dir)
                     pairs = self.generate_pairs(p_mask_dir, children_dir)
@@ -291,7 +290,8 @@ class VLMRelationGenerator:
                                 print(structured_kinematic_desc)
                                 relations_store[image_id][instance_seg].append({
                                     "parts": [os.path.basename(pair[0]), os.path.basename(pair[1])],
-                                    "relation": structured_kinematic_desc,
+                                    "paths": [pair[0], pair[1]],
+                                    "relation": structured_kinematic_desc
                                 })
                                 ## NOTE: combined is the pop-up image for this pair
                                 mask1 = vis_img[0]
@@ -329,17 +329,24 @@ class VLMRelationGenerator:
 
                                 combined.show()
         if dump:
-            for img_id, inst_dict in relations_store.items():
-                for inst_seg, rel_list in inst_dict.items():
-                    out_dir = os.path.join(self.output_dir, img_id, inst_seg)
-                    os.makedirs(out_dir, exist_ok=True)
-                    out_path = os.path.join(out_dir, "relations.json")
-                    with open(out_path, "w") as f:
-                        json.dump(rel_list, f, indent=4)
+            for img_id in relations_store:
+                for inst_id in relations_store[img_id]:
+                    for rel in relations_store[img_id][inst_id]:
+                        part2_full = rel["paths"][1]
+                        if not part2_full:
+                            continue
+                        img_root = os.path.join(root, img_id)
+                        rel_folder = os.path.splitext(
+                            os.path.relpath(part2_full, img_root)
+                        )[0]
+                        out_folder = os.path.join(self.output_dir, img_id, rel_folder)
+                        os.makedirs(out_folder, exist_ok=True)
+                        with open(os.path.join(out_folder, "relations.json"), 'w') as f:
+                            json.dump(rel, f, indent=4)
+
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
             json.dump(self.part_seg_dataset, f, indent=4)
-            font.getsize
 
 if __name__ == "__main__":
     # get dataset dir and src image dir from argument
