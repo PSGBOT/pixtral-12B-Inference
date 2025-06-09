@@ -181,3 +181,4 @@ script/
 *.ipynb
 *.txt
 .vscode/
+relations/

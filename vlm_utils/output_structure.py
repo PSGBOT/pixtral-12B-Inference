@@ -1,9 +1,15 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
+import enum
+
+
+class YesOrNo(enum.Enum):
+    NO = "No"
+    YES = "Yes"
 
 
 class Instance(BaseModel):
-    valid: str
+    valid: YesOrNo
     name: Optional[str] = None
     feature: Optional[List[str]] = Field(default_factory=list)
     usage: Optional[List[str]] = Field(default_factory=list)
@@ -15,13 +21,28 @@ class Part(BaseModel):
     text: str
 
 
+class KinematicJointType(enum.Enum):
+    fixed = "fixed"
+    revolute = "revolute"
+    prismatic = "prismatic"
+    spherical = "spherical"
+    supported = "supported"
+    unrelated = "unrelated"
+
+
+class KinematicRoot(enum.Enum):
+    PART_0 = "0"
+    PART_1 = "1"
+
+
 class KinematicJoint(BaseModel):
     """Enumeration of standard kinematic relationship types between parts."""
 
-    joint_type: str
+    joint_type: KinematicJointType
     joint_movement_axis: str
     is_static: str
     purpose: str
+    root: KinematicRoot
 
 
 class KinematicRelationship(BaseModel):
@@ -30,6 +51,3 @@ class KinematicRelationship(BaseModel):
     part1_name: str = Field(..., description="Name of the first part")
     part2_name: str = Field(..., description="Name of the second part")
     kinematic_joints: list[KinematicJoint]
-    root_part_id: Optional[str] = Field(
-        None, description="Name of the part that acts as the kinematic root"
-    )
