@@ -1,9 +1,10 @@
 from os.path import isfile
 import vlm_utils.message as vlm_message
 import os
-from mistralai import Mistral
+import shutil
 from google import genai
 import json
+import cv2
 import argparse
 from collections import defaultdict
 import time
@@ -27,10 +28,11 @@ class VLMRelationGenerator:
         self.src_image_dir = src_image_dir
         self.dataset = {}
         self.part_seg_dataset = {}
+        self.key_to_sample_dir = {}
         self.output_dir = ouput_dir
+        self.sample_counter = 0
 
-        # api_key = os.environ.get("GENAI_API_KEY")
-        api_key = "AIzaSyCoYulkKlhmsgqvpKZcyxDWjALZRo25jp8"
+        api_key = os.environ.get("GENAI_API_KEY")
         if not api_key:
             print("Error: MISTRAL_API_KEY environment variable not set.")
             exit(1)
@@ -152,6 +154,38 @@ class VLMRelationGenerator:
                 )
         return res
 
+    def get_part_center(self, image_id, instance_id, part_mask_path):
+        """EFFECT: Compute the centroid coordinates of a part's binary mask.
+        INPUT:
+            image_id: ID of the image (unused but kept for interface consistency)
+            instance_id: ID of the instance (unused but kept for interface consistency)
+            part_mask_path: Path to the part's binary mask image
+        OUTPUT:
+            (x, y) tuple of centroid coordinates if successful, None otherwise
+        """
+        try:
+            if not isfile(part_mask_path):
+                return None
+            
+            mask = cv2.imread(part_mask_path, cv2.IMREAD_GRAYSCALE)
+            if mask is None:
+                return None
+                
+            M = cv2.moments(mask)
+            if M["m00"] == 0: 
+                return None
+                
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            return (cX, cY)
+            
+        except ImportError:
+            print("Error: OpenCV required for center calculation")
+            return None
+        except Exception as e:
+            print(f"Error computing part center: {e}")
+            return None
+
     def generate_relation(self):
         relations_store = defaultdict(lambda: defaultdict(list))
         root = os.path.dirname(self.dataset_dir)
@@ -191,9 +225,10 @@ class VLMRelationGenerator:
                         self.part_seg_dataset[image_id]["masks"][instance_seg][
                             "description"
                         ] = instance_desc
+                        print("INSTANCE DESCRIPTION: ")
                         print(instance_desc)
                     else:
-                        print("existing description, skipping vlm")
+                        print("INSTANCE DESCRIPTION: existing description, skipping vlm")
 
                     # process pairs
                     if self.part_seg_dataset[image_id]["masks"][instance_seg][
@@ -229,33 +264,55 @@ class VLMRelationGenerator:
                                 kinematic_desc = self.infer_vlm(
                                     msg, KinematicRelationship
                                 )
+                                print("KINE DESC: ")
                                 print(kinematic_desc)
-                                relations_store[image_id][instance_seg].append(
-                                    {
-                                        "parts": [
-                                            os.path.basename(pair[0]),
-                                            os.path.basename(pair[1]),
-                                        ],
-                                        "relation": kinematic_desc,
-                                    }
-                                )
-                                combined_image_present(vis_img, kinematic_desc)
-        if dump:
-            for img_id in relations_store:
-                for inst_id in relations_store[img_id]:
-                    for rel in relations_store[img_id][inst_id]:
-                        part2_full = rel["paths"][1]
-                        if not part2_full:
-                            continue
-                        img_root = os.path.join(root, img_id)
-                        rel_folder = os.path.splitext(
-                            os.path.relpath(part2_full, img_root)
-                        )[0]
-                        out_folder = os.path.join(self.output_dir, img_id, rel_folder)
-                        os.makedirs(out_folder, exist_ok=True)
-                        with open(os.path.join(out_folder, "relations.json"), 'w') as f:
-                            json.dump(rel, f, indent=4)
+                                if dump:
+                                    if key not in self.key_to_sample_dir:
+                                        sample_dir = os.path.join(self.output_dir, f"Sample_{self.sample_counter}")
+                                        os.makedirs(sample_dir, exist_ok=True)
+                                        self.key_to_sample_dir[key] = sample_dir
+                                        
+                                        if os.path.exists(src_img_path):
+                                            shutil.copy(src_img_path, os.path.join(sample_dir, "src_img.png"))
+                                        
+                                        self.sample_counter += 1
+                                    else:
+                                        sample_dir = self.key_to_sample_dir[key]
+                                    
+                                    for mask_path in [pair[0], pair[1], key]:
+                                        if os.path.exists(mask_path):
+                                            shutil.copy(mask_path, os.path.join(sample_dir, os.path.basename(mask_path)))
 
+                                    config_path = os.path.join(sample_dir, "config.json")
+                                    config_data = {"part center": {}, "kinematic relation": []}
+
+                                    if os.path.exists(config_path):
+                                        with open(config_path, 'r') as f:
+                                            try:
+                                                config_data = json.load(f)
+                                            except json.JSONDecodeError:
+                                                pass
+                                    
+                                    for part_path in [pair[0], pair[1]]:
+                                        part_name = os.path.splitext(os.path.basename(part_path))[0]
+                                        if part_name not in config_data["part center"]:
+                                            center = self.get_part_center(image_id, instance_seg, part_path)
+                                            if center:
+                                                config_data["part center"][part_name] = center
+
+                                    relation_entry = [
+                                        os.path.basename(pair[0]), 
+                                        os.path.basename(pair[1]),
+                                        kinematic_desc
+                                    ]
+                                    config_data["kinematic relation"].append(relation_entry)
+
+                                    with open(config_path, 'w') as f:
+                                        json.dump(config_data, f, indent=4)
+                                    
+                                    print(f"Updated {config_path}")
+                                combined_image_present(vis_img, kinematic_desc)
+        
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
             json.dump(self.part_seg_dataset, f, indent=4)
