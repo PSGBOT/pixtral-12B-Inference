@@ -279,8 +279,10 @@ class VLMRelationGenerator:
                                     else:
                                         sample_dir = self.key_to_sample_dir[key]
                                     
-                                    for mask_path in [pair[0], pair[1], key]:
+                                    for mask_path in [pair[0], pair[1]]:
                                         if os.path.exists(mask_path):
+                                            if os.path.splitext(os.path.basename(mask_path))[0] == "mask4":
+                                                None
                                             shutil.copy(mask_path, os.path.join(sample_dir, os.path.basename(mask_path)))
 
                                     config_path = os.path.join(sample_dir, "config.json")
@@ -301,8 +303,8 @@ class VLMRelationGenerator:
                                                 config_data["part center"][part_name] = center
 
                                     relation_entry = [
-                                        os.path.basename(pair[0]), 
-                                        os.path.basename(pair[1]),
+                                        os.path.splitext(os.path.basename(pair[0]))[0], 
+                                        os.path.splitext(os.path.basename(pair[1]))[0],
                                         kinematic_desc
                                     ]
                                     config_data["kinematic relation"].append(relation_entry)
