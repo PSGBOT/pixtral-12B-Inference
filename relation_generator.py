@@ -1,20 +1,19 @@
 from os.path import isfile
 import vlm_utils.message as vlm_message
 import os
-from mistralai import Mistral
+import shutil
 from google import genai
 import json
+import cv2
 import argparse
-from PIL import Image, ImageDraw, ImageFont
-import textwrap
 from collections import defaultdict
-import numpy as np
-import re
 import time
 import random
 from config import FLASH_VLM_SETTINGS, LLM_SETTINGS, SOTA_VLM_SETTINGS
 from vlm_utils.output_structure import Instance, Part, KinematicRelationship
 from vlm_utils.message import crop_config
+from vlm_utils.image_process import combined_image_present
+import vlm_utils.message as vlm_message
 
 
 class VLMRelationGenerator:
@@ -30,7 +29,9 @@ class VLMRelationGenerator:
         self.src_image_dir = src_image_dir
         self.dataset = {}
         self.part_seg_dataset = {}
+        self.key_to_sample_dir = {}
         self.output_dir = ouput_dir
+        self.sample_counter = 0
 
         api_key = os.environ.get("GENAI_API_KEY")
         if not api_key:
@@ -154,18 +155,48 @@ class VLMRelationGenerator:
                 )
         return res
 
+    def get_part_center(self, image_id, instance_id, part_mask_path):
+        """EFFECT: Compute the centroid coordinates of a part's binary mask.
+        INPUT:
+            image_id: ID of the image (unused but kept for interface consistency)
+            instance_id: ID of the instance (unused but kept for interface consistency)
+            part_mask_path: Path to the part's binary mask image
+        OUTPUT:
+            (x, y) tuple of centroid coordinates if successful, None otherwise
+        """
+        try:
+            if not isfile(part_mask_path):
+                return None
+
+            mask = cv2.imread(part_mask_path, cv2.IMREAD_GRAYSCALE)
+            if mask is None:
+                return None
+
+            M = cv2.moments(mask)
+            if M["m00"] == 0:
+                return None
+
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            return (cX, cY)
+
+        except ImportError:
+            print("Error: OpenCV required for center calculation")
+            return None
+        except Exception as e:
+            print(f"Error computing part center: {e}")
+            return None
+
     def generate_relation(self):
         relations_store = defaultdict(lambda: defaultdict(list))
+        root = os.path.dirname(self.dataset_dir)
         dump = bool(self.output_dir)
         for image_id in self.part_seg_dataset:
             image_res = self.part_seg_dataset[image_id]["masks"]
             for instance_seg in image_res:
                 if "children" in image_res[instance_seg]:
-                    p_mask_dir = os.path.join(
-                        os.path.split(self.dataset_dir)[0],
-                        image_id,
-                        image_res[instance_seg]["path"],
-                    )
+                    seg = image_res[instance_seg]
+                    p_mask_dir = os.path.join(root, image_id, seg["path"])
 
                     children_dir, _ = os.path.splitext(p_mask_dir)
                     pairs = self.generate_pairs(p_mask_dir, children_dir)
@@ -194,9 +225,12 @@ class VLMRelationGenerator:
                         self.part_seg_dataset[image_id]["masks"][instance_seg][
                             "description"
                         ] = instance_desc
+                        print("INSTANCE DESCRIPTION: ")
                         print(instance_desc)
                     else:
-                        print("existing description, skipping vlm")
+                        print(
+                            "INSTANCE DESCRIPTION: existing description, skipping vlm"
+                        )
 
                     # process pairs
                     if self.part_seg_dataset[image_id]["masks"][instance_seg][
@@ -230,63 +264,89 @@ class VLMRelationGenerator:
                                     debug=True,
                                 )
                                 kinematic_desc = self.infer_vlm(
-                                    msg, KinematicRelationship
+                                    msg, KinematicRelationship, vlm=0
                                 )
+                                print("KINE DESC: ")
                                 print(kinematic_desc)
-                                relations_store[image_id][instance_seg].append(
-                                    {
-                                        "parts": [
-                                            os.path.basename(pair[0]),
-                                            os.path.basename(pair[1]),
-                                        ],
-                                        "relation": kinematic_desc,
+                                if dump:
+                                    if key not in self.key_to_sample_dir:
+                                        sample_dir = os.path.join(
+                                            self.output_dir,
+                                            f"Sample_{self.sample_counter}",
+                                        )
+                                        os.makedirs(sample_dir, exist_ok=True)
+                                        self.key_to_sample_dir[key] = sample_dir
+
+                                        if os.path.exists(src_img_path):
+                                            shutil.copy(
+                                                src_img_path,
+                                                os.path.join(sample_dir, "src_img.png"),
+                                            )
+
+                                        self.sample_counter += 1
+                                    else:
+                                        sample_dir = self.key_to_sample_dir[key]
+
+                                    for mask_path in [pair[0], pair[1]]:
+                                        if os.path.exists(mask_path):
+                                            if (
+                                                os.path.splitext(
+                                                    os.path.basename(mask_path)
+                                                )[0]
+                                                == "mask4"
+                                            ):
+                                                None
+                                            shutil.copy(
+                                                mask_path,
+                                                os.path.join(
+                                                    sample_dir,
+                                                    os.path.basename(mask_path),
+                                                ),
+                                            )
+
+                                    config_path = os.path.join(
+                                        sample_dir, "config.json"
+                                    )
+                                    config_data = {
+                                        "part center": {},
+                                        "kinematic relation": [],
                                     }
-                                )
-                                ## NOTE: combined is the pop-up image for this pair
-                                mask1 = vis_img[0]
-                                mask2 = vis_img[1]
-                                split_width = 4
-                                total_w = mask1.width + split_width + mask2.width
-                                max_h = max(mask1.height, mask2.height)
-                                combined = Image.new("RGBA", (total_w, max_h), "WHITE")
-                                combined.paste(mask1, (0, 0))
-                                draw = ImageDraw.Draw(combined)
-                                draw.rectangle(
-                                    [mask1.width, 0, mask1.width + split_width, max_h],
-                                    fill="white",
-                                )
-                                combined.paste(mask2, (mask1.width + split_width, 0))
-                                font = ImageFont.load_default()
-                                pad = 8
 
-                                lines = [f"{k}: {v}" for k, v in kinematic_desc.items()]
+                                    if os.path.exists(config_path):
+                                        with open(config_path, "r") as f:
+                                            try:
+                                                config_data = json.load(f)
+                                            except json.JSONDecodeError:
+                                                pass
 
-                                line_h = 2 * int(font.getlength("A"))
-                                text_h = line_h * len(lines)
+                                    for part_path in [pair[0], pair[1]]:
+                                        part_name = os.path.splitext(
+                                            os.path.basename(part_path)
+                                        )[0]
+                                        if part_name not in config_data["part center"]:
+                                            center = self.get_part_center(
+                                                image_id, instance_seg, part_path
+                                            )
+                                            if center:
+                                                config_data["part center"][
+                                                    part_name
+                                                ] = center
 
-                                total_h = max_h + text_h + 2 * pad
-                                old = combined
-                                combined = Image.new(
-                                    "RGBA", (total_w, total_h), "WHITE"
-                                )
+                                    relation_entry = [
+                                        os.path.splitext(os.path.basename(pair[0]))[0],
+                                        os.path.splitext(os.path.basename(pair[1]))[0],
+                                        kinematic_desc,
+                                    ]
+                                    config_data["kinematic relation"].append(
+                                        relation_entry
+                                    )
 
-                                combined.paste(old, (0, 0))
+                                    with open(config_path, "w") as f:
+                                        json.dump(config_data, f, indent=4)
 
-                                draw = ImageDraw.Draw(combined)
-                                y = max_h + pad
-                                for line in lines:
-                                    draw.text((pad, y), line, fill="black", font=font)
-                                    y += line_h
+                                    print(f"Updated {config_path}")
+                                combined_image_present(vis_img, kinematic_desc)
 
-                                combined.show()
-        if dump:
-            for img_id, inst_dict in relations_store.items():
-                for inst_seg, rel_list in inst_dict.items():
-                    out_dir = os.path.join(self.output_dir, img_id, inst_seg)
-                    os.makedirs(out_dir, exist_ok=True)
-                    out_path = os.path.join(out_dir, "relations.json")
-                    with open(out_path, "w") as f:
-                        json.dump(rel_list, f, indent=4)
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
             json.dump(self.part_seg_dataset, f, indent=4)
