@@ -15,6 +15,7 @@ from vlm_utils.message import crop_config
 from vlm_utils.image_process import combined_image_present
 import vlm_utils.message as vlm_message
 
+
 class VLMRelationGenerator:
     def __init__(self, dataset_dir, src_image_dir, ouput_dir):
         """EFFECT:
@@ -166,19 +167,19 @@ class VLMRelationGenerator:
         try:
             if not isfile(part_mask_path):
                 return None
-            
+
             mask = cv2.imread(part_mask_path, cv2.IMREAD_GRAYSCALE)
             if mask is None:
                 return None
-                
+
             M = cv2.moments(mask)
-            if M["m00"] == 0: 
+            if M["m00"] == 0:
                 return None
-                
+
             cX = int(M["m10"] / M["m00"])
             cY = int(M["m01"] / M["m00"])
             return (cX, cY)
-            
+
         except ImportError:
             print("Error: OpenCV required for center calculation")
             return None
@@ -196,7 +197,6 @@ class VLMRelationGenerator:
                 if "children" in image_res[instance_seg]:
                     seg = image_res[instance_seg]
                     p_mask_dir = os.path.join(root, image_id, seg["path"])
-
 
                     children_dir, _ = os.path.splitext(p_mask_dir)
                     pairs = self.generate_pairs(p_mask_dir, children_dir)
@@ -228,7 +228,9 @@ class VLMRelationGenerator:
                         print("INSTANCE DESCRIPTION: ")
                         print(instance_desc)
                     else:
-                        print("INSTANCE DESCRIPTION: existing description, skipping vlm")
+                        print(
+                            "INSTANCE DESCRIPTION: existing description, skipping vlm"
+                        )
 
                     # process pairs
                     if self.part_seg_dataset[image_id]["masks"][instance_seg][
@@ -262,59 +264,89 @@ class VLMRelationGenerator:
                                     debug=True,
                                 )
                                 kinematic_desc = self.infer_vlm(
-                                    msg, KinematicRelationship
+                                    msg, KinematicRelationship, vlm=0
                                 )
                                 print("KINE DESC: ")
                                 print(kinematic_desc)
                                 if dump:
                                     if key not in self.key_to_sample_dir:
-                                        sample_dir = os.path.join(self.output_dir, f"Sample_{self.sample_counter}")
+                                        sample_dir = os.path.join(
+                                            self.output_dir,
+                                            f"Sample_{self.sample_counter}",
+                                        )
                                         os.makedirs(sample_dir, exist_ok=True)
                                         self.key_to_sample_dir[key] = sample_dir
-                                        
+
                                         if os.path.exists(src_img_path):
-                                            shutil.copy(src_img_path, os.path.join(sample_dir, "src_img.png"))
-                                        
+                                            shutil.copy(
+                                                src_img_path,
+                                                os.path.join(sample_dir, "src_img.png"),
+                                            )
+
                                         self.sample_counter += 1
                                     else:
                                         sample_dir = self.key_to_sample_dir[key]
-                                    
+
                                     for mask_path in [pair[0], pair[1]]:
                                         if os.path.exists(mask_path):
-                                            if os.path.splitext(os.path.basename(mask_path))[0] == "mask4":
+                                            if (
+                                                os.path.splitext(
+                                                    os.path.basename(mask_path)
+                                                )[0]
+                                                == "mask4"
+                                            ):
                                                 None
-                                            shutil.copy(mask_path, os.path.join(sample_dir, os.path.basename(mask_path)))
+                                            shutil.copy(
+                                                mask_path,
+                                                os.path.join(
+                                                    sample_dir,
+                                                    os.path.basename(mask_path),
+                                                ),
+                                            )
 
-                                    config_path = os.path.join(sample_dir, "config.json")
-                                    config_data = {"part center": {}, "kinematic relation": []}
+                                    config_path = os.path.join(
+                                        sample_dir, "config.json"
+                                    )
+                                    config_data = {
+                                        "part center": {},
+                                        "kinematic relation": [],
+                                    }
 
                                     if os.path.exists(config_path):
-                                        with open(config_path, 'r') as f:
+                                        with open(config_path, "r") as f:
                                             try:
                                                 config_data = json.load(f)
                                             except json.JSONDecodeError:
                                                 pass
-                                    
+
                                     for part_path in [pair[0], pair[1]]:
-                                        part_name = os.path.splitext(os.path.basename(part_path))[0]
+                                        part_name = os.path.splitext(
+                                            os.path.basename(part_path)
+                                        )[0]
                                         if part_name not in config_data["part center"]:
-                                            center = self.get_part_center(image_id, instance_seg, part_path)
+                                            center = self.get_part_center(
+                                                image_id, instance_seg, part_path
+                                            )
                                             if center:
-                                                config_data["part center"][part_name] = center
+                                                config_data["part center"][
+                                                    part_name
+                                                ] = center
 
                                     relation_entry = [
-                                        os.path.splitext(os.path.basename(pair[0]))[0], 
+                                        os.path.splitext(os.path.basename(pair[0]))[0],
                                         os.path.splitext(os.path.basename(pair[1]))[0],
-                                        kinematic_desc
+                                        kinematic_desc,
                                     ]
-                                    config_data["kinematic relation"].append(relation_entry)
+                                    config_data["kinematic relation"].append(
+                                        relation_entry
+                                    )
 
-                                    with open(config_path, 'w') as f:
+                                    with open(config_path, "w") as f:
                                         json.dump(config_data, f, indent=4)
-                                    
+
                                     print(f"Updated {config_path}")
                                 combined_image_present(vis_img, kinematic_desc)
-        
+
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
             json.dump(self.part_seg_dataset, f, indent=4)

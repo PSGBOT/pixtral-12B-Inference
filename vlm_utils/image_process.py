@@ -166,6 +166,7 @@ def process_image_for_description(
         print(f"Error processing image: {e}")
         return None
 
+
 def combined_image_present(vis_img, structured_kinematic_desc):
     mask1 = vis_img[0]
     mask2 = vis_img[1]
@@ -175,20 +176,17 @@ def combined_image_present(vis_img, structured_kinematic_desc):
     combined = Image.new("RGBA", (total_w, max_h), "WHITE")
     combined.paste(mask1, (0, 0))
     draw = ImageDraw.Draw(combined)
-    draw.rectangle(
-        [mask1.width, 0, mask1.width + split_width, max_h],
-        fill="white"
-    )
+    draw.rectangle([mask1.width, 0, mask1.width + split_width, max_h], fill="white")
     combined.paste(mask2, (mask1.width + split_width, 0))
     font = ImageFont.load_default()
     pad = 8
 
     lines = [f"{k}: {v}" for k, v in structured_kinematic_desc.items()]
 
-    line_h = 2*int(font.getlength("A"))
+    line_h = 2 * int(font.getlength("A"))
     text_h = line_h * len(lines)
 
-    total_h = max_h + text_h + 2*pad
+    total_h = max_h + text_h + 2 * pad
     old = combined
     combined = Image.new("RGBA", (total_w, total_h), "WHITE")
 
