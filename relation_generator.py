@@ -187,7 +187,7 @@ class VLMRelationGenerator:
             print(f"Error computing part center: {e}")
             return None
 
-    def generate_relation(self):
+    def generate_relation(self, debug=False):
         relations_store = defaultdict(lambda: defaultdict(list))
         root = os.path.dirname(self.dataset_dir)
         dump = bool(self.output_dir)
@@ -212,7 +212,7 @@ class VLMRelationGenerator:
                                 bbox=image_res[instance_seg]["bbox"],
                                 padding_box=[-20, -20, 20, 20],
                             ),
-                            debug=True,
+                            debug=debug,
                         )
 
                         # first generate dense description
@@ -257,14 +257,14 @@ class VLMRelationGenerator:
                                         instance_seg
                                     ]["description"]["name"],
                                     crop_config=crop_config(
-                                        False,
+                                        True,
                                         bbox=image_res[instance_seg]["bbox"],
                                         padding_box=[-20, -20, 20, 20],
                                     ),
-                                    debug=True,
+                                    debug=debug,
                                 )
                                 kinematic_desc = self.infer_vlm(
-                                    msg, KinematicRelationship, vlm=0
+                                    msg, KinematicRelationship, vlm=1
                                 )
                                 print("KINE DESC: ")
                                 print(kinematic_desc)
@@ -289,13 +289,6 @@ class VLMRelationGenerator:
 
                                     for mask_path in [pair[0], pair[1]]:
                                         if os.path.exists(mask_path):
-                                            if (
-                                                os.path.splitext(
-                                                    os.path.basename(mask_path)
-                                                )[0]
-                                                == "mask4"
-                                            ):
-                                                None
                                             shutil.copy(
                                                 mask_path,
                                                 os.path.join(
@@ -345,7 +338,8 @@ class VLMRelationGenerator:
                                         json.dump(config_data, f, indent=4)
 
                                     print(f"Updated {config_path}")
-                                combined_image_present(vis_img, kinematic_desc)
+                                if debug:
+                                    combined_image_present(vis_img, kinematic_desc)
 
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:
@@ -383,4 +377,4 @@ if __name__ == "__main__":
     # Load dataset
     generator.load_dataset()
 
-    generator.generate_relation()
+    generator.generate_relation(debug=False)

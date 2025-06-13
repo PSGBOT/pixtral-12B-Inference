@@ -27,7 +27,9 @@ class KinematicJointType(enum.Enum):
     prismatic = "prismatic"
     spherical = "spherical"
     supported = "supported"
+    flexible = "flexible"
     unrelated = "unrelated"
+    unknown = "unknown"
 
 
 class KinematicRoot(enum.Enum):
@@ -48,6 +50,6 @@ class KinematicJoint(BaseModel):
 class KinematicRelationship(BaseModel):
     """Model for representing kinematic relationships between two parts."""
 
-    part1_desc: str = Field(..., description="Description of the first part")
-    part2_desc: str = Field(..., description="Description of the second part")
+    part0_desc: str = Field(..., description="Description of the first part")
+    part1_desc: str = Field(..., description="Description of the second part")
     kinematic_joints: list[KinematicJoint]

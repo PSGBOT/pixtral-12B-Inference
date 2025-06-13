@@ -12,7 +12,7 @@ FLASH_VLM_SETTINGS = {
 SOTA_VLM_SETTINGS = {
     "model_name": "gemini-2.5-flash-preview-05-20",
     "max_tokens": 4096,
-    "temperature": 0.2,
+    "temperature": 0.7,
 }
 
 LLM_SETTINGS = {
