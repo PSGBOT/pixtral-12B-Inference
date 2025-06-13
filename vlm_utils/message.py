@@ -103,19 +103,33 @@ def part_relation_msg_for_KAF(
 
     # Create the prompt message structure for the API
     user_message = [
-        f"""You are an expert mechanical engineer specializing in kinematic analysis of mechanical systems. I will show you two images showing two components of a {parent_description}. In each image, the interested component is highlighted in green.
+        f"""You are an expert mechanical engineer specializing in kinematic analysis of mechanical systems. I will show you two images showing two parts of a {parent_description}. In each image, the interested part is highlighted in green.
+""",
+        "This is the image of part 0:",
+        types.Part.from_bytes(
+            data=processed_image_a,
+            mime_type="image/jpeg",
+        ),
+        "This is the image of part 1:",
+        types.Part.from_bytes(
+            data=processed_image_b,
+            mime_type="image/jpeg",
+        ),
+        """
 
-Your task is to analyze the precise kinematic relationship between these two highlighted components (no other components out of the highlighted area should be involved):
+Your task is to analyze the precise kinematic relationship between these two highlighted parts (no other parts out of the highlighted area should be involved):
 
-1. describe each highlighted component briefly
+1. describe each highlighted part briefly
 
-2. Determine all possible types of kinematic joint or connection between these components, using one or more of these standard mechanical engineering terms:
-   - fixed: Components are firmly attached with no relative movement
-   - revolute: Components rotate relative to each other around a single axis
-   - prismatic: Components slide linearly relative to each other along a single axis
-   - spherical: Components can rotate around a common point in any direction
-   - supported: One component bears the weight of the other without rigid connection
-   - unrelated: Components are not directly connected or attached to each other
+2. Determine possible types of kinematic joint or connection between these parts, using one or more of these standard mechanical engineering terms:
+   - fixed: parts are firmly attached with no relative movement
+   - revolute: parts rotate relative to each other around a single axis
+   - prismatic: parts slide linearly relative to each other along a single axis
+   - spherical: parts can rotate around a common point in any direction
+   - supported: One part bears the weight of the other without rigid connection
+   - flexible: parts are connected with a flexible connection, such as spring, cable or fabric
+   - unrelated: parts are not directly connected or attached to each other
+   - unknown: does not fit any of the above
 
 4. Determine whether the connection is:
    - static: Designed to prevent movement
@@ -124,27 +138,19 @@ Your task is to analyze the precise kinematic relationship between these two hig
 
 5. Explain the functional purpose of this specific connection in the overall operation of the {parent_description}.
 
-6. Identify which component serves as the kinematic root (the more fixed/stable part that the other part moves relative to). Use the following criteria to determine the root:
-   - The component that remains stationary while the other part moves
-   - The component that is attached to the main structure or frame
-   - The component that constrains or guides the movement of the other part
-   - The component that would typically be considered the "base" in engineering terms
+6. Identify which part serves as the kinematic root (the more fixed/stable part that the other part moves relative to). Use the following criteria to determine the root:
+   - The part that remains stationary while the other part moves
+   - The part that is attached to the main structure or frame
+   - The part that constrains or guides the movement of the other part
+   - The part that would typically be considered the "base" in engineering terms
 
    After analysis, specify exactly one of these answers:
-   - "0" if the component in first image is the kinematic root
-   - "1" if the component in second image is the kinematic root
-   - "neither" if both components move equally relative to each other or if they are both attached to a third component that serves as the actual root
+   - "0" if the part in first image is the kinematic root
+   - "1" if the part in second image is the kinematic root
+   - "neither" if both parts move equally relative to each other or if they are both attached to a third part that serves as the actual root
 
-If multiple joint types exist between these components, list each one separately using the format above.
+If multiple joint types exist between these parts, list each one separately using the format above.
 """,
-        types.Part.from_bytes(
-            data=processed_image_a,
-            mime_type="image/jpeg",
-        ),
-        types.Part.from_bytes(
-            data=processed_image_a,
-            mime_type="image/jpeg",
-        ),
     ]
 
     vis_a = None
