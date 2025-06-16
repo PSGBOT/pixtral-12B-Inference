@@ -9,11 +9,11 @@ import argparse
 from collections import defaultdict
 import time
 import random
+from tqdm import tqdm
 from config import FLASH_VLM_SETTINGS, LLM_SETTINGS, SOTA_VLM_SETTINGS
-from vlm_utils.output_structure import Instance, Part, KinematicRelationship
+from vlm_utils.output_structure import Instance, KinematicRelationship
 from vlm_utils.message import crop_config
 from vlm_utils.image_process import combined_image_present
-import vlm_utils.message as vlm_message
 
 
 class VLMRelationGenerator:
@@ -85,7 +85,7 @@ class VLMRelationGenerator:
 
         for attempt in range(max_retries):
             try:
-                if response_format == None:
+                if response_format is None:
                     chat_response = self.client.models.generate_content(
                         model=self.flash_vlm if vlm == 0 else self.sota_vlm,
                         contents=msg,
@@ -188,10 +188,9 @@ class VLMRelationGenerator:
             return None
 
     def generate_relation(self, debug=False):
-        relations_store = defaultdict(lambda: defaultdict(list))
         root = os.path.dirname(self.dataset_dir)
         dump = bool(self.output_dir)
-        for image_id in self.part_seg_dataset:
+        for image_id in tqdm(self.part_seg_dataset, desc="Processing images"):
             image_res = self.part_seg_dataset[image_id]["masks"]
             for instance_seg in image_res:
                 if "children" in image_res[instance_seg]:
