@@ -6,8 +6,6 @@ import cv2
 import time  # Import time module for performance measurement
 from PIL import Image, ImageDraw, ImageFont
 import os
-import json
-
 
 class crop_config:
     def __init__(
@@ -199,3 +197,35 @@ def combined_image_present(vis_img, structured_kinematic_desc):
         y += line_h
 
     combined.show()
+
+def get_part_center(image_id, instance_id, part_mask_path):
+        """EFFECT: Compute the centroid coordinates of a part's binary mask.
+        INPUT:
+            image_id: ID of the image (unused but kept for interface consistency)
+            instance_id: ID of the instance (unused but kept for interface consistency)
+            part_mask_path: Path to the part's binary mask image
+        OUTPUT:
+            (x, y) tuple of centroid coordinates if successful, None otherwise
+        """
+        try:
+            if not os.path.isfile(part_mask_path):
+                return None
+
+            mask = cv2.imread(part_mask_path, cv2.IMREAD_GRAYSCALE)
+            if mask is None:
+                return None
+
+            M = cv2.moments(mask)
+            if M["m00"] == 0:
+                return None
+
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+            return (cX, cY)
+
+        except ImportError:
+            print("Error: OpenCV required for center calculation")
+            return None
+        except Exception as e:
+            print(f"Error computing part center: {e}")
+            return None
