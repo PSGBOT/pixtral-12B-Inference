@@ -1,0 +1,15 @@
+
+name: pixtral-inference
+channels:
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - google-genai
+    - opencv-python
+    - tqdm
+    - Pillow
+    - numpy
+    - pydantic
+    - setuptools

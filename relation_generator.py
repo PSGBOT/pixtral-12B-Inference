@@ -62,7 +62,7 @@ class VLMRelationGenerator:
         except Exception as e:
             print(f"Error loading dataset: {e}")
             return False
-        
+
     def generate_pairs(self, p_mask_dir, children_dir) -> dict:
         res = {}
         all_dir = os.listdir(children_dir)
@@ -88,7 +88,7 @@ class VLMRelationGenerator:
     def generate_relation(self, debug=False):
         root = os.path.dirname(self.dataset_dir)
         dump = bool(self.output_dir)
-        for image_id in self.part_seg_dataset:
+        for image_id in tqdm(self.part_seg_dataset, desc="Processing images"):
             image_res = self.part_seg_dataset[image_id]["masks"]
             for instance_seg in image_res:
                 if "children" in image_res[instance_seg]:
