@@ -3,7 +3,9 @@ from vlm_utils.image_process import (
     encode_image,
     crop_config,
 )
-
+import base64
+from io import BytesIO
+from PIL import Image
 
 def instance_description_msg(
     image_path,
@@ -87,7 +89,7 @@ def part_relation_msg_for_KAF(
         mask_level=0.15,
         highlight_level=0.6,
         crop_config=crop_config,
-        debug=debug,
+        debug=False,
     )
 
     # Process the image with the second mask
@@ -97,7 +99,7 @@ def part_relation_msg_for_KAF(
         mask_level=0.15,
         highlight_level=0.6,
         crop_config=crop_config,
-        debug=debug,
+        debug=False,
     )
 
     # Create the prompt message structure for the API
@@ -165,7 +167,13 @@ If multiple joint types exist between these parts, list each one separately usin
         ],
     }
 
-    return [user_message]
+    vis_a = None
+    vis_b = None
+    if debug:
+        vis_a = Image.open(BytesIO(base64.b64decode(processed_image_a)))
+        vis_b = Image.open(BytesIO(base64.b64decode(processed_image_b)))
+
+    return [user_message], (vis_a, vis_b) if debug else None
 
 
 def parse_part_relation_msg(msg):

@@ -1,6 +1,7 @@
 import os
 import json
 import argparse
+from tqdm import tqdm
 from collections import defaultdict
 from config import FLASH_VLM_SETTINGS, LLM_SETTINGS, SOTA_VLM_SETTINGS
 from vlm_utils.image_process import combined_image_present
@@ -175,4 +176,4 @@ if __name__ == "__main__":
     # Load dataset
     generator.load_dataset()
 
-    generator.generate_relation(debug=False)
+    generator.generate_relation(debug=True)
