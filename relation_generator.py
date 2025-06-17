@@ -8,6 +8,7 @@ from vlm_utils.image_process import combined_image_present
 from vlm_utils.vlm_service import VLMService
 from vlm_utils.json_output import json_output
 
+
 class VLMRelationGenerator:
     def __init__(self, dataset_dir, src_image_dir, output_dir):
         """EFFECT:
@@ -102,8 +103,15 @@ class VLMRelationGenerator:
                     # generate description for parent instance
                     if "description" not in image_res[instance_seg]:
                         print("processing description for parent instance")
-                        vlm_service = VLMService("GEMINI") ## FIXME: "MISTRAL" = pixtral 12B, "GEMINI" = gemini
-                        instance_desc = vlm_service.instance_description(self.src_image_dir, image_id, p_mask_dir, image_res[instance_seg]["bbox"])
+                        vlm_service = VLMService(
+                            "GEMINI"
+                        )  ## FIXME: "MISTRAL" = pixtral 12B, "GEMINI" = gemini
+                        instance_desc = vlm_service.instance_description(
+                            self.src_image_dir,
+                            image_id,
+                            p_mask_dir,
+                            image_res[instance_seg]["bbox"],
+                        )
                         self.part_seg_dataset[image_id]["masks"][instance_seg][
                             "description"
                         ] = instance_desc
@@ -131,12 +139,34 @@ class VLMRelationGenerator:
                         # Process all pairs for matching keys
                         for key in matching_keys:  # key is the directrory
                             for pair in pairs[key]:
-                                vlm_service = VLMService("GEMINI") ## FIXME: "MISTRAL" = pixtral 12B, "GEMINI" = gemini
-                                kinematic_desc, vis_img = vlm_service.kinematic_description(src_img_path, pair, self.part_seg_dataset[image_id]["masks"][instance_seg]["description"]["name"], image_res[instance_seg]["bbox"], debug)
+                                vlm_service = VLMService(
+                                    "GEMINI"
+                                )  ## FIXME: "MISTRAL" = pixtral 12B, "GEMINI" = gemini
+                                kinematic_desc, vis_img = (
+                                    vlm_service.kinematic_description(
+                                        src_img_path,
+                                        pair,
+                                        self.part_seg_dataset[image_id]["masks"][
+                                            instance_seg
+                                        ]["description"]["name"],
+                                        image_res[instance_seg]["bbox"],
+                                        debug,
+                                    )
+                                )
                                 print("KINE DESC: ")
                                 print(kinematic_desc)
                                 if dump:
-                                    json_output(key, self.key_to_sample_dir, self.output_dir, src_img_path, pair, image_id, instance_seg, kinematic_desc, self.sample_counter)
+                                    json_output(
+                                        key,
+                                        self.key_to_sample_dir,
+                                        self.output_dir,
+                                        src_img_path,
+                                        pair,
+                                        image_id,
+                                        instance_seg,
+                                        kinematic_desc,
+                                        self.sample_counter,
+                                    )
                                 if debug:
                                     combined_image_present(vis_img, kinematic_desc)
 
@@ -176,4 +206,4 @@ if __name__ == "__main__":
     # Load dataset
     generator.load_dataset()
 
-    generator.generate_relation(debug=True)
+    generator.generate_relation(debug=False)
