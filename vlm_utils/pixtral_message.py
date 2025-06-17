@@ -7,6 +7,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 
+
 def instance_description_msg(
     image_path,
     mask_path,
@@ -108,48 +109,52 @@ def part_relation_msg_for_KAF(
         "content": [
             {
                 "type": "text",
-                "text": f"""You are an expert mechanical engineer specializing in kinematic analysis of mechanical systems. I will show you two images of a {parent_description}. In each image, a different part is highlighted in green.
+                "text": """
 
-Image 0: The first highlighted part (Part 0).
-Image 1: The second highlighted part (Part 1).
+Your task is to analyze the precise kinematic relationship between these two highlighted parts (no other parts out of the highlighted area should be involved):
 
-Your task is to analyze the precise kinematic relationship between these two highlighted parts (no other parts should be involved):
+1. describe each highlighted part briefly
 
-1. Identify each highlighted part with its technical name.
+2. describe the function of each parts, using the one or more of these standard mechanical engineering terms:
+- handle: a part which is designed to hold or carry something
+- housing: a protective enclosure for components
+- support: a part designed to bear weight or provide stability
+- frame: a rigid structure that provides support or a framework for something
+- button: a small knob or disc that is pushed or pressed to operate something, nozzle is also a button
+- wheel: a circular object that revolves on an axle and is fixed below a vehicle or other object to enable it to move easily over the ground
+- display: presenting visual information (text or image)
+- cover: a lid or other removable top for a container
+- plug: a device for making an electrical connection, typically having two or three pins that are inserted into sockets
+- port: an opening in the surface of an electronic device through which another device can be connected
+- door: an opening in the surface of a structure that allows entry or exit
+- container: a receptacle for holding or containing something
+- other: something that does not fit any of the above
 
-2. Determine the exact type of kinematic joint or connection between these parts,  one or more of these standard mechanical engineering terms:
-   - fixed: Parts are firmly attached with no relative movement
-   - revolute: Parts rotate relative to each other around a single axis
-   - prismatic: Parts slide linearly relative to each other along a single axis
-   - cylindrical: Parts can both rotate and slide along the same axis
-   - spherical: Parts can rotate around a common point in any direction
-   - planar: Parts can translate in two dimensions and rotate around one axis
-   - press: One part can be pressed into another with spring resistance
+
+3. Determine possible types of kinematic joint or connection between these parts, using one or more of these standard mechanical engineering terms:
+   - fixed: parts are firmly attached with no relative movement
+   - revolute: parts rotate relative to each other around a single axis
+   - prismatic: parts slide linearly relative to each other along a single axis
+   - spherical: parts can rotate around a common point in any direction
    - supported: One part bears the weight of the other without rigid connection
-   - unrelated: Parts are not directly connected or attached to each other
-
-3. Specify the exact axis or direction of movement, using the following standard terms:
-    - vertical
-    - horizontal
-    - radial
-    - axial
+   - flexible: parts are connected with a flexible connection, such as spring, cable or fabric
+   - unrelated: parts are not directly connected or attached to each other
+   - unknown: does not fit any of the above
 
 4. Determine whether the connection is:
    - static: Designed to prevent movement
    - controlled: Allows specific, limited movement
    - free: Allows unrestricted movement within the joint's degrees of freedom
 
-5. Explain the functional purpose of this specific connection in the overall operation of the {parent_description}.
-
-6. Identify which part serves as the kinematic root (the more fixed/stable part that the other part moves relative to). Use the following criteria to determine the root:
+5. Identify which part serves as the kinematic root (the more fixed/stable part that the other part moves relative to). Use the following criteria to determine the root:
    - The part that remains stationary while the other part moves
    - The part that is attached to the main structure or frame
    - The part that constrains or guides the movement of the other part
    - The part that would typically be considered the "base" in engineering terms
 
    After analysis, specify exactly one of these answers:
-   - "0" if the part in image 0 is the kinematic root
-   - "1" if the part in image 1 is the kinematic root
+   - "0" if the part in first image is the kinematic root
+   - "1" if the part in second image is the kinematic root
    - "neither" if both parts move equally relative to each other or if they are both attached to a third part that serves as the actual root
 
 If multiple joint types exist between these parts, list each one separately using the format above.
@@ -213,31 +218,3 @@ Be precise and only extract information that is explicitly stated in the message
         },
     ]
     return message
-
-
-# deprecated
-def part_description_msg(image_path, mask_path, parent_description, debug=True):
-    processed_image = process_image_for_description(
-        image_path,
-        mask_path,
-        debug=debug,
-        crop=True,
-        bbox=[641, 343, 754, 453],
-        padding_box=[-10, -10, 10, 10],
-    )
-
-    # Create the message structure for the API
-    user_message = {
-        "role": "user",
-        "content": [
-            {
-                "type": "text",
-                "text": f"The highlighted (as green) part in the image is a part of a {parent_description}. Please introduce the name and purpose of this part. If its purpose is too subtle, you can ignore the request of introducing its purpose. If there is any text on this component, also output the text. This is the image:",
-            },
-            {
-                "type": "image_url",
-                "image_url": f"data:image/jpeg;base64,{processed_image}",
-            },
-        ],
-    }
-    return [user_message]

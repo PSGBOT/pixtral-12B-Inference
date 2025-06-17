@@ -121,7 +121,23 @@ Your task is to analyze the precise kinematic relationship between these two hig
 
 1. describe each highlighted part briefly
 
-2. Determine possible types of kinematic joint or connection between these parts, using one or more of these standard mechanical engineering terms:
+2. describe the function of each parts, using the one or more of these standard mechanical engineering terms:
+- handle: a part which is designed to hold or carry something
+- housing: a protective enclosure for components
+- support: a part designed to bear weight or provide stability
+- frame: a rigid structure that provides support or a framework for something
+- button: a small knob or disc that is pushed or pressed to operate something, nozzle is also a button
+- wheel: a circular object that revolves on an axle and is fixed below a vehicle or other object to enable it to move easily over the ground
+- display: presenting visual information (text or image)
+- cover: a lid or other removable top for a container
+- plug: a device for making an electrical connection, typically having two or three pins that are inserted into sockets
+- port: an opening in the surface of an electronic device through which another device can be connected
+- door: an opening in the surface of a structure that allows entry or exit
+- container: a receptacle for holding or containing something
+- other: something that does not fit any of the above
+
+
+3. Determine possible types of kinematic joint or connection between these parts, using one or more of these standard mechanical engineering terms:
    - fixed: parts are firmly attached with no relative movement
    - revolute: parts rotate relative to each other around a single axis
    - prismatic: parts slide linearly relative to each other along a single axis
@@ -136,9 +152,7 @@ Your task is to analyze the precise kinematic relationship between these two hig
    - controlled: Allows specific, limited movement
    - free: Allows unrestricted movement within the joint's degrees of freedom
 
-5. Explain the functional purpose of this specific connection in the overall operation of the {parent_description}.
-
-6. Identify which part serves as the kinematic root (the more fixed/stable part that the other part moves relative to). Use the following criteria to determine the root:
+5. Identify which part serves as the kinematic root (the more fixed/stable part that the other part moves relative to). Use the following criteria to determine the root:
    - The part that remains stationary while the other part moves
    - The part that is attached to the main structure or frame
    - The part that constrains or guides the movement of the other part
