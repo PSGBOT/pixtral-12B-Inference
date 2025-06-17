@@ -205,7 +205,9 @@ class VLMService:
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
-    def instance_description(self, src_image_dir, image_id, p_mask_dir, bbox):
+    def instance_description(
+        self, src_image_dir, image_id, p_mask_dir, bbox, debug=False
+    ):
         # Build the VLM prompt
         msg = self.msg_mod.instance_description_msg(
             os.path.join(src_image_dir, f"{image_id}.png"),
@@ -215,6 +217,7 @@ class VLMService:
                 bbox,
                 padding_box=[-20, -20, 20, 20],
             ),
+            debug=debug,
         )
         instance_desc = {"valid": False}
         if self.client.provider == "GEMINI":
