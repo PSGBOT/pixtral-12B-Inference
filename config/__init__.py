@@ -7,5 +7,7 @@ from config.config import (
     OUTPUT_SETTINGS,
     LLM_SETTINGS,
     SOTA_VLM_SETTINGS,
+    VLM_SETTINGS_MIS,
+    LLM_SETTINGS_MIS,
 )
 from config.custom_cfg import IMAGE_PATHS

@@ -26,3 +26,15 @@ OUTPUT_SETTINGS = {
     "save_processed_images": True,
     "output_dir": "output",
 }
+
+VLM_SETTINGS_MIS = {
+    "model_name": "pixtral-12b-2409",
+    "max_tokens": 4096,
+    "temperature": 0.5,
+}
+
+LLM_SETTINGS_MIS = {
+    "model_name": "open-mistral-nemo-2407",
+    "max_tokens": 4096,
+    "temperature": 0.3,
+}
