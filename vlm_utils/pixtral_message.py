@@ -29,7 +29,7 @@ def instance_description_msg(
                 "type": "text",
                 "text": """Focus on the area highlighted in green in the image.
 
-Step 1: Determine if the highlighted area represents a distinct, identifiable object or instance:
+Step 1: Determine if the highlighted area represents a distinct, identifiable instance:
 - If the highlighted area is clearly a distinct object, proceed to Step 2.
 - If the highlighted area is abstract, ambiguous, or you cannot confidently identify it as a specific object (e.g., part of background, texture, partial view), respond with "Valid: No".
 
@@ -113,9 +113,9 @@ def part_relation_msg_for_KAF(
 
 Your task is to analyze the precise kinematic relationship between these two highlighted parts (no other parts out of the highlighted area should be involved):
 
-1. describe each highlighted part briefly
+1. Describe each highlighted part briefly
 
-2. describe the function of each parts, using the one or more of these standard mechanical engineering terms:
+2. Determine the function of each parts, using the one or more of these standard terms:
 - handle: a part which is designed to hold or carry something
 - housing: a protective enclosure for components
 - support: a part designed to bear weight or provide stability
