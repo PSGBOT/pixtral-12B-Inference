@@ -29,7 +29,7 @@ def instance_description_msg(
                 "type": "text",
                 "text": """Focus on the area highlighted in green in the image.
 
-Step 1: Determine if the highlighted area represents a distinct, identifiable object or instance:
+Step 1: Determine if the highlighted area represents a distinct, identifiable instance:
 - If the highlighted area is clearly a distinct object, proceed to Step 2.
 - If the highlighted area is abstract, ambiguous, or you cannot confidently identify it as a specific object (e.g., part of background, texture, partial view), respond with "Valid: No".
 
