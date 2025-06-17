@@ -113,9 +113,9 @@ def part_relation_msg_for_KAF(
 
 Your task is to analyze the precise kinematic relationship between these two highlighted parts (no other parts out of the highlighted area should be involved):
 
-1. describe each highlighted part briefly
+1. Describe each highlighted part briefly
 
-2. describe the function of each parts, using the one or more of these standard mechanical engineering terms:
+2. Determine the function of each parts, using the one or more of these standard terms:
 - handle: a part which is designed to hold or carry something
 - housing: a protective enclosure for components
 - support: a part designed to bear weight or provide stability
