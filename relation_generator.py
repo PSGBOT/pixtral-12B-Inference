@@ -104,7 +104,7 @@ class VLMRelationGenerator:
                     if "description" not in image_res[instance_seg]:
                         print("processing description for parent instance")
                         vlm_service = VLMService(
-                            "GEMINI"
+                            "MISTRAL"
                         )  ## FIXME: "MISTRAL" = pixtral 12B, "GEMINI" = gemini
                         instance_desc = vlm_service.instance_description(
                             self.src_image_dir,
@@ -136,12 +136,12 @@ class VLMRelationGenerator:
                                 matching_keys.append(key)
                         print(matching_keys)
 
+                        vlm_service = VLMService(
+                            "GEMINI"
+                        )  ## FIXME: "MISTRAL" = pixtral 12B, "GEMINI" = gemini
                         # Process all pairs for matching keys
                         for key in matching_keys:  # key is the directrory
                             for pair in pairs[key]:
-                                vlm_service = VLMService(
-                                    "GEMINI"
-                                )  ## FIXME: "MISTRAL" = pixtral 12B, "GEMINI" = gemini
                                 kinematic_desc, vis_img = (
                                     vlm_service.kinematic_description(
                                         src_img_path,
@@ -169,6 +169,9 @@ class VLMRelationGenerator:
                                     )
                                 if debug:
                                     combined_image_present(vis_img, kinematic_desc)
+
+                            if dump:
+                                self.sample_counter += 1
 
         # store the description(valuable)
         with open(self.dataset_dir, "w") as f:

@@ -4,7 +4,13 @@ import random
 import json
 from google import genai
 from mistralai import Mistral
-from config import FLASH_VLM_SETTINGS, SOTA_VLM_SETTINGS, LLM_SETTINGS, VLM_SETTINGS_MIS, LLM_SETTINGS_MIS
+from config import (
+    FLASH_VLM_SETTINGS,
+    SOTA_VLM_SETTINGS,
+    LLM_SETTINGS,
+    VLM_SETTINGS_MIS,
+    LLM_SETTINGS_MIS,
+)
 from vlm_utils.output_structure import Instance, KinematicRelationship
 import vlm_utils.gemini_message as gemini_message
 import vlm_utils.pixtral_message as pixtral_message
@@ -14,9 +20,17 @@ class BaseVLMClient:
     """
     Abstract base class defining VLM client interface.
     """
-    def infer(self, msg, response_format=None, vlm_index=0):
+
+    def __init__(self):
+        self.provider = None
         raise NotImplementedError
-    
+
+    def infer(
+        self, msg, response_format=None, model_index=0
+    ):  # model index 0 for llm, 1 for vlm, 2 for sota vlm
+        raise NotImplementedError
+
+
 class GeminiVLMClient(BaseVLMClient):
     def __init__(self):
         api_key = os.environ.get("GENAI_API_KEY")
@@ -32,8 +46,9 @@ class GeminiVLMClient(BaseVLMClient):
         self.llm = LLM_SETTINGS["model_name"]
         self.llm_max_tokens = LLM_SETTINGS["max_tokens"]
         self.llm_temperature = LLM_SETTINGS["temperature"]
+        self.provider = "GEMINI"
 
-    def infer(self, msg, response_format=None, vlm=0):
+    def infer(self, msg, response_format=None, model_index=0):
         max_retries = 5
         base_delay = 2  # Base delay in seconds
 
@@ -41,14 +56,14 @@ class GeminiVLMClient(BaseVLMClient):
             try:
                 if response_format == None:
                     chat_response = self.client.models.generate_content(
-                        model=self.flash_vlm if vlm == 0 else self.sota_vlm,
+                        model=self.flash_vlm if model_index <= 1 else self.sota_vlm,
                         contents=msg,
                     )
                     return json.loads(chat_response.text)
                 else:
                     print("using format")
                     chat_response = self.client.models.generate_content(
-                        model=self.flash_vlm if vlm == 0 else self.sota_vlm,
+                        model=self.flash_vlm if model_index <= 1 else self.sota_vlm,
                         contents=msg,
                         config={
                             "response_mime_type": "application/json",
@@ -76,7 +91,7 @@ class GeminiVLMClient(BaseVLMClient):
                         )
                         raise
                 else:
-                    # If it's not a rate limit error, re-raise the exception
+                    # If it's not a rate limit error, retry as well
                     print(f"API error: {e}")
                     if attempt < max_retries - 1:
                         delay = base_delay * (2**attempt) + random.uniform(0, 1)
@@ -87,6 +102,7 @@ class GeminiVLMClient(BaseVLMClient):
                     else:
                         raise
 
+
 class MistralVLMClient(BaseVLMClient):
     def __init__(self):
         api_key = os.environ.get("MISTRAL_API_KEY")
@@ -95,15 +111,16 @@ class MistralVLMClient(BaseVLMClient):
         self.client = Mistral(api_key=api_key)
 
         # vision–language settings
-        self.vlm               = VLM_SETTINGS_MIS["model_name"]
-        self.vlm_max_tokens    = VLM_SETTINGS_MIS["max_tokens"]
-        self.vlm_temperature   = VLM_SETTINGS_MIS["temperature"]
+        self.vlm = VLM_SETTINGS_MIS["model_name"]
+        self.vlm_max_tokens = VLM_SETTINGS_MIS["max_tokens"]
+        self.vlm_temperature = VLM_SETTINGS_MIS["temperature"]
         # pure-text LLM settings
-        self.llm               = LLM_SETTINGS_MIS["model_name"]
-        self.llm_max_tokens    = LLM_SETTINGS_MIS["max_tokens"]
-        self.llm_temperature   = LLM_SETTINGS_MIS["temperature"]
+        self.llm = LLM_SETTINGS_MIS["model_name"]
+        self.llm_max_tokens = LLM_SETTINGS_MIS["max_tokens"]
+        self.llm_temperature = LLM_SETTINGS_MIS["temperature"]
+        self.provider = "MISTRAL"
 
-    def infer(self, msg, response_format=None, vlm=0):
+    def infer(self, msg, response_format=None, model_index=0):
         """
         msg may now be:
           - a tuple (messages_list, vis_img) from pixtral_message.part_relation_msg_for_KAF
@@ -112,25 +129,26 @@ class MistralVLMClient(BaseVLMClient):
         """
         if isinstance(msg, tuple) and isinstance(msg[0], list):
             messages = msg[0]
-        elif isinstance(msg, list) \
-             and all(isinstance(m, dict) and "role" in m and "content" in m for m in msg):
+        elif isinstance(msg, list) and all(
+            isinstance(m, dict) and "role" in m and "content" in m for m in msg
+        ):
             messages = msg
         else:
             messages = [{"role": "user", "content": msg}]
 
-        if vlm == 0:
-            model_name  = self.vlm
-            max_tokens  = self.vlm_max_tokens
-            temperature = self.vlm_temperature
-            tag         = "VLM"
-        else:
-            model_name  = self.llm
-            max_tokens  = self.llm_max_tokens
+        if model_index == 0:
+            model_name = self.llm
+            max_tokens = self.llm_max_tokens
             temperature = self.llm_temperature
-            tag         = "LLM"
+            tag = "LLM"
+        else:
+            model_name = self.vlm
+            max_tokens = self.vlm_max_tokens
+            temperature = self.vlm_temperature
+            tag = "VLM"
 
         max_retries = 5
-        base_delay  = 2
+        base_delay = 2
         for attempt in range(max_retries):
             try:
                 if response_format is None:
@@ -152,13 +170,14 @@ class MistralVLMClient(BaseVLMClient):
                     return json.loads(resp.choices[0].message.content)
 
             except Exception as e:
-                is_rate = "rate limit" in str(e).lower() or "too many requests" in str(e).lower()
-                if is_rate and attempt < max_retries - 1:
-                    delay = base_delay * (2 ** attempt) + random.random()
-                    print(f"[{tag}] rate-limit; retry {attempt+1}/{max_retries} in {delay:.1f}s")
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2**attempt) + random.random()
+                    print(
+                        f"[{tag}] rate-limit; retry {attempt + 1}/{max_retries} in {delay:.1f}s"
+                    )
                     time.sleep(delay)
                 else:
-                    print(f"[{tag}] API error on attempt {attempt+1}: {e}")
+                    print(f"[{tag}] API error on attempt {attempt + 1}: {e}")
                     raise
 
 
@@ -173,6 +192,7 @@ def create_vlm_client(provider: str) -> BaseVLMClient:
         return MistralVLMClient()
     else:
         raise ValueError(f"Unsupported VLM provider: {provider}")
+
 
 class VLMService:
     def __init__(self, provider: str):
@@ -196,11 +216,22 @@ class VLMService:
                 padding_box=[-20, -20, 20, 20],
             ),
         )
-        # Parse directly into the Instance schema via VLM (vlm=0)
-        instance_desc = self.client.infer(msg, Instance, vlm=0)
+        instance_desc = {"valid": False}
+        if self.client.provider == "GEMINI":
+            # Parse directly into the Instance schema via VLM
+            instance_desc = self.client.infer(msg, Instance, model_index=2)
+        elif self.client.provider == "MISTRAL":
+            # Generate description via VLM
+            instance_desc = self.client.infer(msg, None, model_index=1)
+            # Parse into Instance via LLM
+            msg = self.msg_mod.parse_instance_description_msg(instance_desc["response"])
+            instance_desc = self.client.infer(msg, Instance, model_index=0)
 
         # Normalize valid → boolean
-        if not instance_desc.get("valid", False):
+        print(instance_desc)
+        if instance_desc["valid"] == "Yes":
+            instance_desc["valid"] = True
+        else:
             return {"valid": False}
         return instance_desc
 
@@ -224,8 +255,10 @@ class VLMService:
         else:
             prompt_msg, vis_img = msg_vis, None
 
-        # Parse into KinematicRelationship via VLM (vlm=0)
-        kinematic_desc = self.client.infer(prompt_msg, KinematicRelationship, vlm=0)
+        # Parse into KinematicRelationship via FLASH VLM
+        kinematic_desc = self.client.infer(
+            prompt_msg, KinematicRelationship, model_index=1
+        )
 
         if not debug:
             vis_img = None
