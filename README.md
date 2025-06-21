@@ -133,5 +133,8 @@ The kinematic analysis reveals that the pump mechanism is the primary stable par
 
 ```
 
-4. *TODO*
-Extract information from structured outputs. Combine the results under same key together to get the raw data for KAF.
+4. Extract information from structured outputs. Combine the results under same key together to get the raw data for KAF.
+
+5. Visualize relations
+![image](https://github.com/user-attachments/assets/7f61f33a-140d-44f4-8ed5-053435207b44)
+
