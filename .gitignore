@@ -182,3 +182,4 @@ script/
 *.txt
 .vscode/
 relations/
+data/
