@@ -221,7 +221,7 @@ class VLMService:
         )
         instance_desc = {"valid": False}
         if self.client.provider == "GEMINI":
-            # Parse directly into the Instance schema via VLM
+            # Parse directly into the Instance schema via SOTA VLM
             instance_desc = self.client.infer(msg, Instance, model_index=2)
         elif self.client.provider == "MISTRAL":
             # Generate description via VLM
