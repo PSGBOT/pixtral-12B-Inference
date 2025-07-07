@@ -61,8 +61,12 @@ def _parse_relations(relations):
     return relation_type, root
 
 
-def prune_kinematic_relation(kr_dict):
-    pass
+def prune_kinematic_relation(relations, dir):
+    relations = detect_invalid_kr(relations, dir)
+    relations = detect_cyclic_kr(relations, dir)
+    relations = detect_conflict_kr(relations, dir)
+    relations = detect_redundancy_kr(relations, dir)
+    return relations
 
 
 if __name__ == "__main__":
@@ -87,4 +91,5 @@ if __name__ == "__main__":
             kr_list = psr_dict["kinematic relation"]
             pos_dict = psr_dict["part center"]
         G = read_rel_as_nx(kr_list, pos_dict)
+        G = prune_kinematic_relation(G, sample_dir) # prune
         show_graph(G, src_img_path, mask_path)
