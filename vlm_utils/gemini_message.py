@@ -28,17 +28,17 @@ def instance_description_msg(
         [
             """Focus only on the area highlighted in green in the image.
 
-Step 1: Determine if the highlighted area represents a distinct, identifiable foreground instance:
-- If the highlighted area is clearly a distinct foreground instance that is interactable, proceed to Step 2.
-- Else, respond with "Valid: No".
+Step 1: Determine if the highlighted area represents a distinct, identifiable instance what can be operated (human, pets are not opertable):
+- If the highlighted area is clearly a distinct, operatable object, proceed to Step 2.
+- If the highlighted area is abstract, ambiguous, or you cannot confidently identify it as a specific object (e.g., part of background, texture, partial view), respond with "Valid: No".
 
-Step 2: If the highlighted area is a distinct object, provide:
+Step 2: If the highlighted area is a distinct, operatable object, provide:
 1. The specific name of the object (be precise and use technical terms when appropriate)
 2. The primary function or purpose of this object
 3. Any notable features visible in the highlighted area (no color description)
 4. If there is text visible on the object, include what it says
 
-Remember, if you're uncertain about the highlighted area being a distinct object, respond only with "Valid: No".
+Remember, if you're uncertain about the highlighted area being a distinct, operatable object, respond only with "Valid: No".
 """,
             types.Part.from_bytes(
                 data=processed_image,
