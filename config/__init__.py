@@ -10,4 +10,4 @@ from config.config import (
     VLM_SETTINGS_MIS,
     LLM_SETTINGS_MIS,
 )
-from config.custom_cfg import IMAGE_PATHS
+# from config.custom_cfg import IMAGE_PATHS
