@@ -28,7 +28,7 @@ def instance_description_msg(
         [
             """Focus only on the area highlighted in green in the image.
 
-Step 1: Determine if the highlighted area represents a distinct, identifiable instance what can be operated (human, pets are not opertable):
+Step 1: Determine if the highlighted area represents a distinct, identifiable instance which can be operated (human, pets are not opertable):
 - If the highlighted area is clearly a distinct, operatable object, proceed to Step 2.
 - If the highlighted area is abstract, ambiguous, or you cannot confidently identify it as a specific object (e.g., part of background, texture, partial view), respond with "Valid: No".
 
