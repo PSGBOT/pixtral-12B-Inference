@@ -49,16 +49,19 @@ class GeminiVLMClient(BaseVLMClient):
         self.provider = "GEMINI"
 
     def infer(self, msg, response_format=None, model_index=0):
-        max_retries = 5
+        max_retries = 15
         base_delay = 2  # Base delay in seconds
 
-        for attempt in range(max_retries):
+        attempt = 0
+        chat_response = {"text": None}
+        while attempt < max_retries:
             try:
                 if response_format == None:
                     chat_response = self.client.models.generate_content(
                         model=self.flash_vlm if model_index <= 1 else self.sota_vlm,
                         contents=msg,
                     )
+                    print(chat_response)
                     return json.loads(chat_response.text)
                 else:
                     print("using format")
@@ -70,6 +73,7 @@ class GeminiVLMClient(BaseVLMClient):
                             "response_schema": response_format,
                         },
                     )
+                    print(chat_response)
                     return json.loads(chat_response.text)
 
             except Exception as e:
@@ -77,7 +81,10 @@ class GeminiVLMClient(BaseVLMClient):
                 if (
                     "rate limit" in str(e).lower()
                     or "too many requests" in str(e).lower()
+                    or "overloaded" in str(e).lower()
+                    or "disconnected" in str(e).lower()
                 ):
+                    attempt += 1
                     if attempt < max_retries - 1:  # Don't sleep on the last attempt
                         # Calculate exponential backoff with jitter
                         delay = base_delay * (2**attempt) + random.uniform(0, 1)
@@ -91,8 +98,9 @@ class GeminiVLMClient(BaseVLMClient):
                         )
                         raise
                 else:
-                    # If it's not a rate limit error, retry as well
                     print(f"API error: {e}")
+                    attempt += 1
+                    # If it's not a rate limit error, retry as well
                     if attempt < max_retries - 1:
                         delay = base_delay * (2**attempt) + random.uniform(0, 1)
                         print(
