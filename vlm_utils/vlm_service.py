@@ -49,7 +49,7 @@ class GeminiVLMClient(BaseVLMClient):
         self.provider = "GEMINI"
 
     def infer(self, msg, response_format=None, model_index=0):
-        max_retries = 5
+        max_retries = 15
         base_delay = 2  # Base delay in seconds
 
         attempt = 0
@@ -82,6 +82,7 @@ class GeminiVLMClient(BaseVLMClient):
                     "rate limit" in str(e).lower()
                     or "too many requests" in str(e).lower()
                     or "overloaded" in str(e).lower()
+                    or "disconnected" in str(e).lower()
                 ):
                     attempt += 1
                     if attempt < max_retries - 1:  # Don't sleep on the last attempt
@@ -98,21 +99,16 @@ class GeminiVLMClient(BaseVLMClient):
                         raise
                 else:
                     print(f"API error: {e}")
-                    if chat_response.text is None:
-                        print("Get None response")
-                        time.sleep(10)
+                    attempt += 1
+                    # If it's not a rate limit error, retry as well
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2**attempt) + random.uniform(0, 1)
+                        print(
+                            f"Retrying in {delay:.2f} seconds... (Attempt {attempt + 1}/{max_retries})"
+                        )
+                        time.sleep(delay)
                     else:
-                        attempt += 1
-                        # If it's not a rate limit error, retry as well
-                        print(chat_response.text)
-                        if attempt < max_retries - 1:
-                            delay = base_delay * (2**attempt) + random.uniform(0, 1)
-                            print(
-                                f"Retrying in {delay:.2f} seconds... (Attempt {attempt + 1}/{max_retries})"
-                            )
-                            time.sleep(delay)
-                        else:
-                            raise
+                        raise
 
 
 class MistralVLMClient(BaseVLMClient):
