@@ -73,7 +73,7 @@ class GeminiVLMClient(BaseVLMClient):
                             "response_schema": response_format,
                         },
                     )
-                    print(chat_response)
+                    # print(chat_response)
                     return json.loads(chat_response.text)
 
             except Exception as e:

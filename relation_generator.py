@@ -161,6 +161,8 @@ class VLMRelationGenerator:
                             )  ## FIXME: "MISTRAL" = pixtral 12B, "GEMINI" = gemini
                             # Process all pairs for matching keys
                             for key in matching_keys:  # key is the directrory
+                                if len(pairs[key]) > 8:  # too many relations
+                                    continue
                                 for pair in pairs[key]:
                                     kinematic_desc, vis_img = (
                                         vlm_service.kinematic_description(
