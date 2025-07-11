@@ -28,6 +28,7 @@ PSR_KR_CAT = [
     "flexible",
     "unrelated",
 ]
+# order
 PSR_FUNC_CAT = [
     "other",
     "handle",
@@ -62,7 +63,6 @@ def _parse_relations(relations):
 
 
 def prune_kinematic_relation(relations, dir):
-    relations = detect_invalid_kr(relations, dir)
     relations = detect_cyclic_kr(relations, dir)
     relations = detect_conflict_kr(relations, dir)
     relations = detect_redundancy_kr(relations, dir)
@@ -93,3 +93,5 @@ if __name__ == "__main__":
         G = read_rel_as_nx(kr_list, pos_dict)
         G = prune_kinematic_relation(G, sample_dir) # prune
         show_graph(G, src_img_path, mask_path)
+
+# output modified config.json

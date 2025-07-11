@@ -37,3 +37,6 @@ def read_rel_as_nx(kr_list, pos_dict):
                 G.add_edge(part1_id, part2_id, **edge_attributes)
             # print(part1_id, part2_id, edge_attributes)
     return G
+
+# find root? after removing cyclics
+# weight? -> delete cycle -> find root -> prune -> output config.json
