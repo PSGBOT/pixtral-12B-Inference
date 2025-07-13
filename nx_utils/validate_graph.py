@@ -9,9 +9,37 @@ def detect_cyclic_kr(G, CAT):
     # remove?
     while True:
         try:
-            cycle = nx.find_cycle(G)
+            cycle = nx.find_cycle(G, orientation="original")
         except nx.NetworkXNoCycle:
             break  # No more cycles
+
+        worst_index = -1
+        worst_edge = None
+
+        for u, v in cycle:
+            edge_attributes = G.get_edge_data(u, v)
+
+            # get relation type
+            joint_type = edge_attributes.get("joint_type", "unknown")
+            appendable = ["revolute", "prismatic", "spherical"]
+            if joint_type in appendable:
+                control_type = edge_attributes.get("controllable")
+                joint_type = f"{joint_type}-{control_type}"
+
+            index = CAT.index(joint_type)
+            if index > worst_index:
+                worst_index = index
+                worst_edge = (u, v)
+
+        if worst_edge is not None:
+            worst_u, worst_v = worst_edge
+            G.remove_edge(worst_u, worst_v)
+        
+# Deal with cycles with reversible "fixed"
+#    while True:
+#        try:
+#            cycle = nx.find_cycle(G, orientation="ignore")
+
     return G
 
 def detect_conflict_kr(G):
