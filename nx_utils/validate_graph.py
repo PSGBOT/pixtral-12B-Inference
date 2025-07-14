@@ -35,12 +35,7 @@ def detect_cyclic_kr(G, CAT):
         if worst_edge is not None:
             worst_u, worst_v = worst_edge
             G.remove_edge(worst_u, worst_v)
-        
-# Deal with cycles with reversible "fixed"
-#    while True:
-#        try:
-#            cycle = nx.find_cycle(G, orientation="ignore")
-
+            
     return G
 
 def detect_conflict_kr(G, CAT):
@@ -124,3 +119,15 @@ def detect_redundancy_kr(G, dir):
 
     G.remove_edges_from(edges_to_remove)
     return G
+
+# in conflict: merge-able edges in the same direction
+# e.g. same direction: "fixed"+"...-revolute"->"...-static" / "fixed"+"revolute-static"->"revolute-static"
+
+# in redundancy: find the root of the tree and substitute the double for loop with pathing
+# in redundancy: margin between mask detection
+
+# in cyclic: *multiple edges between a pair of nodes is possible (weight follows the highest-weight edge)
+# in cyclic: "fixed" direction problem?
+
+# TEST
+# optimize: get_relation_index could be an independent function

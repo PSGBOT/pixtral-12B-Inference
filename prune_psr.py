@@ -13,7 +13,7 @@ from nx_utils.validate_graph import (
 )
 
 PSR_KR_CAT = [
-    "fixed",
+    "fixed", # keep iff only "fixed" is detected
     "revolute-static",
     "prismatic-static",
     "spherical-static",
@@ -23,10 +23,10 @@ PSR_KR_CAT = [
     "revolute-free",
     "prismatic-free",
     "spherical-free",
-    "supported",
-    "flexible",
-    "unrelated",
-    "unknown"
+    "supported", # keep
+    "flexible", # keep
+    "unrelated", # ignore
+    "unknown" # delete others if detected
 ]
 # order
 PSR_FUNC_CAT = [
