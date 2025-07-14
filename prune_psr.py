@@ -63,7 +63,7 @@ def _parse_relations(relations):
 
 
 def prune_kinematic_relation(relations, dir, CAT):
-    relations = detect_conflict_kr(relations)
+    relations = detect_conflict_kr(relations, CAT)
     relations = detect_cyclic_kr(relations, CAT)
     relations = detect_redundancy_kr(relations, dir)
     return relations

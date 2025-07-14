@@ -42,7 +42,7 @@ def detect_cyclic_kr(G, CAT):
 
     return G
 
-def detect_conflict_kr(G):
+def detect_conflict_kr(G, CAT):
     # for all
     # A->B A->B
     # if "fixed"&""
@@ -72,7 +72,7 @@ def detect_redundancy_kr(G, dir):
     # remove A->C
     redundant = []
     edges_to_remove = []
-    for part1, part2 in G.edges(): # margin between masks, remove max margin relation
+    for part1, part2 in G.nodes(): # margin between masks, remove max margin relation
         for part3 in G.nodes():
             if part3 != part1 and part3 != part2:
                 if G.has_edge(part1, part3) and G.has_edge(part3, part2) and G.has_edge(part1, part3):
