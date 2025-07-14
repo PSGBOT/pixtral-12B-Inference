@@ -68,6 +68,35 @@ def prune_kinematic_relation(relations, dir, CAT):
     relations = detect_redundancy_kr(relations, dir)
     return relations
 
+def create_new_config_json(sample_dir, G, kr_list, pos_dict, new_config_filename="new_config.json"):
+    config_path = os.path.join(sample_dir, new_config_filename)
+    config_data = {
+        "part center": {},
+        "kinematic relation": []
+    }
+
+    for node in G.nodes:
+        part_name = str(node)  # Convert node to string for consistency
+        if part_name not in config_data["part center"]:
+            # Get the part center from the pos_dict (if available)
+            center = pos_dict.get(part_name, [0, 0])  # Default to [0, 0] if not found
+            config_data["part center"][part_name] = center
+
+    for u, v, data in G.edges(data=True):
+        part1 = str(u)
+        part2 = str(v)
+        joint_type = data.get("joint_type", "unknown")
+        controllable = data.get("controllable", "static")     
+        relation_entry = [part1, part2, {"joint_type": joint_type, "controllable": controllable}]
+        config_data["kinematic relation"].append(relation_entry)
+    
+    with open(config_path, "w") as f:
+        json.dump(config_data, f, indent=4)
+    
+    print(f"Created new {config_path}")
+
+#networkX包
+#把原本的json文件用原本函数变成G，然后用这个函数测一下relation是否相同
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -93,5 +122,7 @@ if __name__ == "__main__":
         G = read_rel_as_nx(kr_list, pos_dict)
         G = prune_kinematic_relation(G, sample_dir, PSR_KR_CAT) # prune
         show_graph(G, src_img_path, mask_path)
+
+        create_new_config_json(sample_dir, G, kr_list, pos_dict)
 
 # output modified config.json
