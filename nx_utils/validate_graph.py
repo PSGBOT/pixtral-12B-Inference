@@ -44,14 +44,43 @@ def detect_cyclic_kr(G, CAT):
 
 def detect_conflict_kr(G, CAT):
     # for all
-    # A->B A->B
-    # if "fixed"&""
-    # ball? keep fixed
-    # ? remove "fixed" and change "controllable" to "static"
+    # A->B A->B or more, remove until there's at most one edge 
 
-    invalid_edges = []
+    for part1, part2 in G.nodes():
+        all_edges = []
+        if G.has_edge(part1, part2):
+            for key, attributes in G[part1][part2].items():
+                all_edges.append((part1, part2, key, attributes))
+        if G.has_edge(part2, part1):
+            for key, attributes in G[part2][part1].items():
+                all_edges.append((part2, part1, key, attributes))
+        if len(all_edges) <= 1: # no conflict
+            continue
 
-    G.remove_edges_from(invalid_edges)
+        edges_to_remove = []
+        best_index = float('inf')
+        best_edge = None
+
+        for an_edge in all_edges:
+            _, _, _, edge_attributes = an_edge
+            # get relation type
+            joint_type = edge_attributes.get("joint_type", "unknown")
+            appendable = ["revolute", "prismatic", "spherical"]
+            if joint_type in appendable:
+                control_type = edge_attributes.get("controllable")
+                joint_type = f"{joint_type}-{control_type}"
+
+            index = CAT.index(joint_type)
+            if index < best_index:
+                    best_index = index
+                    best_edge = an_edge
+        
+        # Mark all others for removal
+        for edge in all_edges:
+            if edge != best_edge:
+                edges_to_remove.append(edge)
+
+        G.remove_edges_from(edges_to_remove)
     return G
 
 def get_margin(mask_u, mask_v): # GPT
