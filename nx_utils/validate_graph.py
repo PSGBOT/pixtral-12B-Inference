@@ -3,6 +3,8 @@ import numpy as np
 import networkx as nx
 import os
 
+appendable_joint_types = ["revolute", "prismatic", "spherical"]
+
 def detect_cyclic_kr(G, CAT):
     # for all
     # A->B->C->A
@@ -21,8 +23,7 @@ def detect_cyclic_kr(G, CAT):
 
             # get relation type
             joint_type = edge_attributes.get("joint_type", "unknown")
-            appendable = ["revolute", "prismatic", "spherical"]
-            if joint_type in appendable:
+            if joint_type in appendable_joint_types:
                 control_type = edge_attributes.get("controllable")
                 joint_type = f"{joint_type}-{control_type}"
 
@@ -65,8 +66,7 @@ def detect_conflict_kr(G, CAT):
             _, _, _, edge_attributes = an_edge
             # get relation type
             joint_type = edge_attributes.get("joint_type", "unknown")
-            appendable = ["revolute", "prismatic", "spherical"]
-            if joint_type in appendable:
+            if joint_type in appendable_joint_types:
                 control_type = edge_attributes.get("controllable")
                 joint_type = f"{joint_type}-{control_type}"
 
