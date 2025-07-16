@@ -58,7 +58,7 @@ def detect_conflict_kr(G, CAT):
             # if "unknown" detected, discard all others
             for an_edge in all_edges:
                 _, _, _, edge_attributes = an_edge
-                if edge_attributes.get("controllable") == "unknown":
+                if edge_attributes.get("joint_type") == "unknown":
                     keep_edge = an_edge
                     for edge in all_edges:
                         if edge != keep_edge:
