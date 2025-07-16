@@ -111,24 +111,25 @@ def detect_conflict_kr(G, CAT):
                 G.add_edge(part1, part2, key="merged", **merged_attr)
                 continue
 
-
-
-    for part1, part2 in G.nodes():
-        all_edges = []
+        # opposite direction
+        forward_edges = []
+        backward_edges = []
         if G.has_edge(part1, part2):
             for key, attributes in G[part1][part2].items():
-                all_edges.append((part1, part2, key, attributes))
+                forward_edges.append((part1, part2, key, attributes))
+        else:
+            continue
         if G.has_edge(part2, part1):
             for key, attributes in G[part2][part1].items():
-                all_edges.append((part2, part1, key, attributes))
-        if len(all_edges) <= 1: # no conflict
+                backward_edges.append((part2, part1, key, attributes))
+        else:
             continue
 
         edges_to_remove = []
-        best_index = float('inf')
-        best_edge = None
+        best_index_forward = float('inf')
+        best_index_backward = float('inf')
 
-        for an_edge in all_edges:
+        for an_edge in forward_edges:
             _, _, _, edge_attributes = an_edge
             # get relation type
             joint_type = edge_attributes.get("joint_type")
@@ -137,16 +138,26 @@ def detect_conflict_kr(G, CAT):
                 joint_type = f"{joint_type}-{control_type}"
 
             index = CAT.index(joint_type)
-            if index < best_index:
-                    best_index = index
-                    best_edge = an_edge
-        
-        # Mark all others for removal
-        for edge in all_edges:
-            if edge != best_edge:
-                edges_to_remove.append(edge)
+            if index < best_index_forward:
+                    best_index_forward = index
 
-        G.remove_edges_from(edges_to_remove)
+        for an_edge in backward_edges:
+            _, _, _, edge_attributes = an_edge
+            # get relation type
+            joint_type = edge_attributes.get("joint_type")
+            if joint_type in appendable_joint_types:
+                control_type = edge_attributes.get("controllable")
+                joint_type = f"{joint_type}-{control_type}"
+
+            index = CAT.index(joint_type)
+            if index < best_index_backward:
+                    best_index_backward = index
+        
+        if best_index_forward < best_index_backward:
+            G.remove_edges_from(backward_edges)
+        else:
+            G.remove_edges_from(forward_edges)
+
     return G
 
 def get_margin(mask_u, mask_v): # GPT
