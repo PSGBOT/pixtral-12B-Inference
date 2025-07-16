@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import networkx as nx
 import os
+from collections import defaultdict # for dict
 
 appendable_joint_types = ["revolute", "prismatic", "spherical"]
 
@@ -84,6 +85,32 @@ def detect_conflict_kr(G, CAT):
             if len(valid_edges) <= 1:
                 continue
             # else try to merge
+            for an_edge in valid_edges:
+                _, _, _, edge_attributes = an_edge
+                if edge_attributes.get("joint_type") == "static":
+                    for edge in valid_edges:
+                        _, _, _, edge_attributes = an_edge
+                        if edge_attributes.get("joint_type") == "fixed":
+                            G.remove_edge(edge)
+            # merge This part is GPT, rework needed
+            fixed_edge = next((e for e in valid_edges if e[3].get("joint_type") == "fixed"), None)
+            other_edge = next(
+                (e for e in valid_edges if e[3].get("joint_type") != "fixed" and e[3].get("controllable") != "static"),
+                None
+            )
+            if fixed_edge and other_edge:
+                _, _, _, other_attr = other_edge
+                merged_attr = dict(other_attr)
+                merged_attr["controllable"] = "fixed"
+
+                # Remove all current valid edges
+                for edge in valid_edges:
+                    G.remove_edge(edge[0], edge[1], edge[2])
+
+                # Add the merged edge
+                G.add_edge(part1, part2, key="merged", **merged_attr)
+                continue
+
 
 
     for part1, part2 in G.nodes():
