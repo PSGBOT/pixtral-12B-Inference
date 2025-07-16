@@ -125,7 +125,6 @@ def detect_conflict_kr(G, CAT):
         else:
             continue
 
-        edges_to_remove = []
         best_index_forward = float('inf')
         best_index_backward = float('inf')
 
