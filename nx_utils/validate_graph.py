@@ -16,26 +16,31 @@ def detect_cyclic_kr(G, CAT):
         except nx.NetworkXNoCycle:
             break  # No more cycles
 
-        worst_index = -1
-        worst_edge = None
+        worst_best_index = -1
+        worst_pair = None
 
         for u, v in cycle:
-            edge_attributes = G.get_edge_data(u, v)
+            edges = G.get_edge_data(u, v)
+            best_index = float("inf")
 
             # get relation type
-            joint_type = edge_attributes.get("joint_type")
-            if joint_type in appendable_joint_types:
-                control_type = edge_attributes.get("controllable")
-                joint_type = f"{joint_type}-{control_type}"
+            for key, edge_attributes in edges.items():
+                joint_type = edge_attributes.get("joint_type")
+                if joint_type in appendable_joint_types:
+                    control_type = edge_attributes.get("controllable")
+                    joint_type = f"{joint_type}-{control_type}"
+                index = CAT.index(joint_type)
+                if index < best_index:
+                    best_index = index
 
-            index = CAT.index(joint_type)
-            if index > worst_index:
-                worst_index = index
-                worst_edge = (u, v)
-
-        if worst_edge is not None:
-            worst_u, worst_v = worst_edge
-            G.remove_edge(worst_u, worst_v)
+            if best_index > worst_best_index:
+                worst_best_index = best_index
+                worst_pair = (u, v)
+            
+        # remove edges between the worst pair of nodes
+        all_keys = list(G[worst_pair[0]][worst_pair[1]].keys())
+        for key in all_keys:
+            G.remove_edge(G[worst_pair[0]], G[worst_pair[1]], key)
 
     return G
 
