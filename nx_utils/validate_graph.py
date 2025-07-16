@@ -22,7 +22,7 @@ def detect_cyclic_kr(G, CAT):
             edge_attributes = G.get_edge_data(u, v)
 
             # get relation type
-            joint_type = edge_attributes.get("joint_type", "unknown")
+            joint_type = edge_attributes.get("joint_type")
             if joint_type in appendable_joint_types:
                 control_type = edge_attributes.get("controllable")
                 joint_type = f"{joint_type}-{control_type}"
@@ -39,8 +39,52 @@ def detect_cyclic_kr(G, CAT):
     return G
 
 def detect_conflict_kr(G, CAT):
-    # for all
-    # A->B A->B or more, remove until there's at most one edge 
+
+    # same direction
+    for part1 in G.nodes():
+        for part2 in G.nodes():
+            if part1 == part2:
+                continue
+            if not G.has_edge(part1, part2):
+                continue
+            
+            all_edges = []
+            for key, attributes in G[part1][part2].items():
+                all_edges.append((part1, part2, key, attributes))
+
+            if len(all_edges) <= 1:
+                continue
+
+            # if "unknown" detected, discard all others
+            for an_edge in all_edges:
+                _, _, _, edge_attributes = an_edge
+                if edge_attributes.get("controllable") == "unknown":
+                    keep_edge = an_edge
+                    for edge in all_edges:
+                        if edge != keep_edge:
+                            G.remove_edge(edge)
+
+            # iff "fixed", keep 1 "fixed"
+            if all(attr.get("joint_type") == "fixed" for _, attr in all_edges):
+                # Pick the first "fixed" edge to keep
+                keep_edge = all_edges[0]
+                for edge in all_edges:
+                    if edge != keep_edge:
+                        G.remove_edge(edge)
+                continue
+
+            valid_edges = [] # skip "supported", "flexible", "unrelated"
+            skippable_joint_types = ["supported", "flexible", "unrelated"]
+            for an_edge in all_edges:
+                _, _, _, edge_attributes = an_edge
+                joint_type = edge_attributes.get("joint_type")
+                if joint_type not in skippable_joint_types:
+                    valid_edges.append(an_edge)
+
+            if len(valid_edges) <= 1:
+                continue
+            # else try to merge
+
 
     for part1, part2 in G.nodes():
         all_edges = []
@@ -60,7 +104,7 @@ def detect_conflict_kr(G, CAT):
         for an_edge in all_edges:
             _, _, _, edge_attributes = an_edge
             # get relation type
-            joint_type = edge_attributes.get("joint_type", "unknown")
+            joint_type = edge_attributes.get("joint_type")
             if joint_type in appendable_joint_types:
                 control_type = edge_attributes.get("controllable")
                 joint_type = f"{joint_type}-{control_type}"
