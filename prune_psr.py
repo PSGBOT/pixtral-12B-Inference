@@ -91,7 +91,7 @@ if __name__ == "__main__":
             kr_list = psr_dict["kinematic relation"]
             pos_dict = psr_dict["part center"]
         G = read_rel_as_nx(kr_list, pos_dict)
-        # G = prune_kinematic_relation(G, sample_dir, PSR_KR_CAT)  # prune
+        G = prune_kinematic_relation(G, sample_dir, PSR_KR_CAT)  # prune
         show_graph(G, src_img_path, mask_path)
 
         create_new_config_json(sample_dir, G, kr_list, pos_dict)
