@@ -137,6 +137,11 @@ The kinematic analysis reveals that the pump mechanism is the primary stable par
 
 5. Visualize relations
 ![image](https://github.com/user-attachments/assets/7f61f33a-140d-44f4-8ed5-053435207b44)
+5.5 Remove bg masks samples in the dataset
+```
+python remove_bg_sample.py --dataset_dir ../Data/PSR_final/train --trash_dir ../Data/PSR_final/train_trash
+python remove_bg_sample.py --dataset_dir ../Data/PSR_final/val --trash_dir ../Data/PSR_final/val_trash
+```
 
 6. Prune relations using networkx
 TODO
@@ -156,5 +161,3 @@ Kinematic relation data is consistent.
 Processing samples: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1081/1081 [00:00<00:00, 1533.54it/s]
 No conflict detected.
 ```
-
-
