@@ -138,3 +138,23 @@ The kinematic analysis reveals that the pump mechanism is the primary stable par
 5. Visualize relations
 ![image](https://github.com/user-attachments/assets/7f61f33a-140d-44f4-8ed5-053435207b44)
 
+6. Prune relations using networkx
+TODO
+
+7. output the networkx back into a json file
+Test command:
+```
+python test_json_output.py --dataset_dir <path to the folder for training samples>
+```
+output:
+```
+...
+Created new ../Data/PSR/cabinet/train/Sample_791/new_config.json
+Comparing config.json and new_config.json...
+Part center data is consistent.
+Kinematic relation data is consistent.
+Processing samples: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1081/1081 [00:00<00:00, 1533.54it/s]
+No conflict detected.
+```
+
+
