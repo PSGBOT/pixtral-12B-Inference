@@ -179,17 +179,35 @@ def detect_conflict_kr(G, CAT):
     return G
 
 
-def get_margin(mask_u, mask_v):  # GPT
-    # Get white pixel coordinates in each mask
-    u_points = np.column_stack(np.where(mask_u > 0))
-    v_points = np.column_stack(np.where(mask_v > 0))
+def get_margin(mask_u, mask_v):
+    """
+    Calculates the minimum Euclidean distance between two binary masks.
 
-    if len(u_points) == 0 or len(v_points) == 0:
+    Args:
+        mask_u (numpy.ndarray): First binary mask (2D array, non-zero for foreground).
+        mask_v (numpy.ndarray): Second binary mask (2D array, non-zero for foreground).
+
+    Returns:
+        float: The minimum Euclidean distance between the two masks.
+               Returns float('inf') if either mask is empty.
+    """
+    # Ensure masks are boolean or uint8 for distanceTransform
+    mask_u_bool = mask_u > 0
+    mask_v_bool = mask_v > 0
+
+    if not np.any(mask_u_bool) or not np.any(mask_v_bool):
         return float("inf")  # No valid mask area, treat as max distance
 
-    # Compute all pairwise distances and return the minimum one
-    dists = np.linalg.norm(u_points[:, np.newaxis] - v_points[np.newaxis, :], axis=2)
-    return np.min(dists)
+    # Compute the distance transform of the first mask
+    # cv2.DIST_L2 for Euclidean distance, 5 for mask size (can be 0 for exact)
+    dist_transform_u = cv2.distanceTransform(mask_u_bool.astype(np.uint8), cv2.DIST_L2, 5)
+
+    # Get the distances from pixels in mask_v to mask_u
+    # We only care about the distances at the locations of white pixels in mask_v
+    distances_at_v_pixels = dist_transform_u[mask_v_bool]
+
+    # The minimum of these distances is the margin
+    return np.min(distances_at_v_pixels)
 
 
 def graph_to_tree(G, CAT):
