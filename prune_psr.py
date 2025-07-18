@@ -3,17 +3,17 @@ import os
 import networkx as nx
 import argparse
 from nx_utils.build_nx import read_rel_as_nx
+from nx_utils.output_nx import create_new_config_json
 from nx_utils.visualize import show_graph
 
 from nx_utils.validate_graph import (
     detect_conflict_kr,
-    detect_invalid_kr,
     detect_redundancy_kr,
     detect_cyclic_kr,
 )
 
 PSR_KR_CAT = [
-    "fixed", # keep iff only "fixed" is detected
+    "fixed",  # keep iff only "fixed" is detected
     "revolute-static",
     "prismatic-static",
     "spherical-static",
@@ -23,10 +23,10 @@ PSR_KR_CAT = [
     "revolute-free",
     "prismatic-free",
     "spherical-free",
-    "supported", # keep
-    "flexible", # keep
-    "unrelated", # ignore
-    "unknown" # delete others if detected
+    "supported",  # keep
+    "flexible",  # keep
+    "unrelated",  # ignore
+    "unknown",  # delete others if detected
 ]
 # order
 PSR_FUNC_CAT = [
@@ -91,7 +91,9 @@ if __name__ == "__main__":
             kr_list = psr_dict["kinematic relation"]
             pos_dict = psr_dict["part center"]
         G = read_rel_as_nx(kr_list, pos_dict)
-        G = prune_kinematic_relation(G, sample_dir, PSR_KR_CAT) # prune
+        G = prune_kinematic_relation(G, sample_dir, PSR_KR_CAT)  # prune
         show_graph(G, src_img_path, mask_path)
+
+        create_new_config_json(sample_dir, G, kr_list, pos_dict)
 
 # output modified config.json
