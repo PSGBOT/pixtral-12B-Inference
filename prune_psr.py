@@ -64,8 +64,8 @@ def _parse_relations(relations):
 
 def prune_kinematic_relation(relations, dir, CAT):
     relations = detect_conflict_kr(relations, CAT)
-    relations = detect_cyclic_kr(relations, CAT)
-    relations = detect_redundancy_kr(relations, dir)
+    # relations = detect_cyclic_kr(relations, CAT)
+    # relations = detect_redundancy_kr(relations, dir)
     return relations
 
 
@@ -95,5 +95,3 @@ if __name__ == "__main__":
         show_graph(G, src_img_path, mask_path)
 
         create_new_config_json(sample_dir, G, kr_list, pos_dict)
-
-# output modified config.json

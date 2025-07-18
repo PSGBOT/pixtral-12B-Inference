@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# check the validity of the dataset
 # execute this script in the dataset folder
 
 # check mask index
