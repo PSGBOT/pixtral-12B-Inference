@@ -29,11 +29,11 @@ def read_rel_as_nx(kr_list, pos_dict, all_rel=False):
                 edge_attributes["controllable"] = kj["controllable"]
             edge_attributes["root"] = root_part
 
-            # assign node function
+            # assign node function per edge
             edge_attributes["part0_function"] = part0_func
             edge_attributes["part1_function"] = part1_func
 
-            # assign node description
+            # assign node description per edge
             edge_attributes["part0_desc"] = part0_desc
             edge_attributes["part1_desc"] = part1_desc
 
