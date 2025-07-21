@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import networkx as nx
 import os
-from collections import defaultdict  # for dict
+from collections import defaultdict, deque
 
 appendable_joint_types = ["revolute", "prismatic", "spherical"]
 
@@ -200,7 +200,9 @@ def get_margin(mask_u, mask_v):
 
     # Compute the distance transform of the first mask
     # cv2.DIST_L2 for Euclidean distance, 5 for mask size (can be 0 for exact)
-    dist_transform_u = cv2.distanceTransform(mask_u_bool.astype(np.uint8), cv2.DIST_L2, 5)
+    dist_transform_u = cv2.distanceTransform(
+        mask_u_bool.astype(np.uint8), cv2.DIST_L2, 5
+    )
 
     # Get the distances from pixels in mask_v to mask_u
     # We only care about the distances at the locations of white pixels in mask_v
@@ -208,6 +210,39 @@ def get_margin(mask_u, mask_v):
 
     # The minimum of these distances is the margin
     return np.min(distances_at_v_pixels)
+
+
+def find_kinematic_root(G):
+    # 方法 1：找入度为 0 的节点
+    root_candidates = [n for n in G.nodes if G.in_degree(n) == 0]
+    if len(root_candidates) == 1:
+        return root_candidates[0]
+    elif len(root_candidates) > 1:
+        print(f"⚠️ 警告：存在多个入度为 0 的节点，使用传播法找 root: {root_candidates}")
+
+    # 方法 2：反向传播：从叶子节点向上累积值
+    node_value = defaultdict(int)
+    leaves = [n for n in G.nodes if G.out_degree(n) == 0]
+    queue = deque(leaves)
+
+    for leaf in leaves:
+        node_value[leaf] = 1
+
+    while queue:
+        child = queue.popleft()
+        for parent in G.predecessors(child):
+            node_value[parent] += node_value[child]
+            queue.append(parent)
+
+    # 找累计值最大的节点
+    max_value = max(node_value.values())
+    root_candidates = [n for n, v in node_value.items() if v == max_value]
+
+    if len(root_candidates) == 1:
+        return root_candidates[0]
+    else:
+        print(f"⚠️ 警告：传播后仍有多个 root 候选，返回其中之一: {root_candidates}")
+        return root_candidates[0]
 
 
 def graph_to_tree(G, CAT):
