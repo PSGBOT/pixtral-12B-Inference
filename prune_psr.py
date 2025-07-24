@@ -10,6 +10,7 @@ from nx_utils.validate_graph import (
     detect_conflict_kr,
     detect_redundancy_kr,
     detect_cyclic_kr,
+    graph_to_tree,
 )
 
 PSR_KR_CAT = [
@@ -63,10 +64,15 @@ def _parse_relations(relations):
 
 
 def prune_kinematic_relation(relations, dir, CAT):
-    relations = detect_conflict_kr(relations, CAT)
-    relations = detect_cyclic_kr(relations, CAT)
-    # relations = detect_redundancy_kr(relations, dir)
-    return relations
+    try:
+        relations = detect_conflict_kr(relations, CAT)
+        relations = detect_cyclic_kr(relations, CAT)
+        relations, root = graph_to_tree(relations)
+    except Exception as e:
+        print(e)
+        return None, False
+    relations = detect_redundancy_kr(relations, root, dir)
+    return relations, True
 
 
 if __name__ == "__main__":
@@ -91,7 +97,12 @@ if __name__ == "__main__":
             kr_list = psr_dict["kinematic relation"]
             pos_dict = psr_dict["part center"]
         G = read_rel_as_nx(kr_list, pos_dict)
-        G = prune_kinematic_relation(G, sample_dir, PSR_KR_CAT)  # prune
         show_graph(G, src_img_path, mask_path)
+        G, valid = prune_kinematic_relation(G, sample_dir, PSR_KR_CAT)  # prune
+        if valid:
+            show_graph(G, src_img_path, mask_path)
 
-        create_new_config_json(sample_dir, G, kr_list, pos_dict)
+            create_new_config_json(sample_dir, G, kr_list, pos_dict)
+        else:
+            print(f"Failed to prune {sample_name}, delete!!")
+            os.remove(sample_dir)

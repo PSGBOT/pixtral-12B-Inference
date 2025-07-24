@@ -1,3 +1,4 @@
+import re
 import cv2
 import numpy as np
 import networkx as nx
@@ -10,43 +11,40 @@ appendable_joint_types = ["revolute", "prismatic", "spherical"]
 def detect_cyclic_kr(G, CAT):
     # for all
     # A->B->C->A
-    # remove?
-    while True:
+    turn = 0
+    while turn < 20:
         try:
             cycle = nx.find_cycle(G, orientation="original")
+            print("cycle found")
+            turn += 1
         except nx.NetworkXNoCycle:
             break  # No more cycles
 
-        worst_best_index = -1
+        worst_index = -1
         worst_pair = None
 
-        for u, v in cycle:
-            edges = G.get_edge_data(u, v)
+        for u, v, key, _ in cycle:
+            edge_data = G.get_edge_data(u, v, key)
             best_index = float("inf")
 
             # get relation type
-            for key, edge_attributes in edges.items():
-                joint_type = edge_attributes.get("joint_type")
-                if joint_type in appendable_joint_types:
-                    control_type = edge_attributes.get("controllable")
-                    joint_type = f"{joint_type}-{control_type}"
-                index = CAT.index(joint_type)
-                if index < best_index:
-                    best_index = index
+            joint_type = edge_data.get("joint_type")
+            if joint_type in appendable_joint_types:
+                control_type = edge_data.get("controllable")
+                joint_type = f"{joint_type}-{control_type}"
+            index = CAT.index(joint_type)
+            if index > worst_index:
+                worst_index = index
+                worst_pair = (u, v, key)
 
-            if best_index > worst_best_index:
-                worst_best_index = best_index
-                worst_pair = (u, v)
+        if worst_pair:
+            G.remove_edge(worst_pair[0], worst_pair[1], worst_pair[2])
 
-        # remove edges between the worst pair of nodes
-        all_keys = list(G[worst_pair[0]][worst_pair[1]].keys())
-        for key in all_keys:
-            G.remove_edge(G[worst_pair[0]], G[worst_pair[1]], key)
-
+    assert turn < 20
     return G
 
 
-def detect_conflict_kr(G, CAT):
+def detect_conflict_kr(G, CAT_index):
     for part1 in G.nodes():
         for part2 in G.nodes():
             # same direction
@@ -155,7 +153,7 @@ def detect_conflict_kr(G, CAT):
                     control_type = ea_i.get("controllable")
                     joint_type = f"{joint_type}-{control_type}"
 
-                index = CAT.index(joint_type)
+                index = CAT_index.index(joint_type)
                 if index < best_index_forward:
                     best_index_forward = index
 
@@ -167,7 +165,7 @@ def detect_conflict_kr(G, CAT):
                     control_type = ea_i.get("controllable")
                     joint_type = f"{joint_type}-{control_type}"
 
-                index = CAT.index(joint_type)
+                index = CAT_index.index(joint_type)
                 if index < best_index_backward:
                     best_index_backward = index
 
@@ -213,16 +211,16 @@ def get_margin(mask_u, mask_v):
 
 
 def find_kinematic_root(G):
-    # 方法 1：找入度为 0 的节点
-    root_candidates = [n for n in G.nodes if G.in_degree(n) == 0]
+    # 方法 1：找出度为 0 的节点
+    root_candidates = [n for n in G.nodes if G.out_degree(n) == 0]
     if len(root_candidates) == 1:
-        return root_candidates[0]
+        return root_candidates[0], root_candidates
     elif len(root_candidates) > 1:
-        print(f"⚠️ 警告：存在多个入度为 0 的节点，使用传播法找 root: {root_candidates}")
+        print(f"⚠️ 警告：存在多个出度为 0 的节点，使用传播法找 root: {root_candidates}")
 
     # 方法 2：反向传播：从叶子节点向上累积值
     node_value = defaultdict(int)
-    leaves = [n for n in G.nodes if G.out_degree(n) == 0]
+    leaves = [n for n in G.nodes if G.in_degree(n) == 0]
     queue = deque(leaves)
 
     for leaf in leaves:
@@ -230,77 +228,235 @@ def find_kinematic_root(G):
 
     while queue:
         child = queue.popleft()
-        for parent in G.predecessors(child):
+        for parent in G.successors(child):
             node_value[parent] += node_value[child]
             queue.append(parent)
 
     # 找累计值最大的节点
     max_value = max(node_value.values())
-    root_candidates = [n for n, v in node_value.items() if v == max_value]
+    best_roots = [n for n, v in node_value.items() if v == max_value]
 
-    if len(root_candidates) == 1:
-        return root_candidates[0]
+    if len(best_roots) == 1:
+        return best_roots[0], root_candidates
     else:
-        print(f"⚠️ 警告：传播后仍有多个 root 候选，返回其中之一: {root_candidates}")
-        return root_candidates[0]
+        print(f"⚠️ 警告：传播后仍有多个 root 候选，返回其中之一: {best_roots}")
+        return best_roots[0], root_candidates
 
 
-def graph_to_tree(G, CAT):
-    best_edges = []
-    for u, v, key, edge_attributes in G.edges():
-        joint_type = edge_attributes.get("joint_type", "unknown")
-        if joint_type in appendable_joint_types:
-            control_type = edge_attributes.get("controllable")
-            joint_type = f"{joint_type}-{control_type}"
-        weight = CAT.index(joint_type)
+def graph_swap_dir(G: nx.MultiDiGraph, u: str, v: str, key):
+    attr = G.get_edge_data(u, v, key)
+    new_attr = attr.copy()
+    root_part = attr.get("root")
+    part0_func = attr.get("part0_function")
+    part1_func = attr.get("part1_function")
+    part0_desc = attr.get("part0_desc")
+    part1_desc = attr.get("part1_desc")
+    if root_part == "0":
+        new_attr["root"] = "1"
+    elif root_part == "1":
+        new_attr["root"] = "0"
+    # assign node function per edge
+    new_attr["part0_function"] = part1_func
+    new_attr["part1_function"] = part0_func
 
-        # needs re-org from here down
-        a, b = sorted((u, v))
-        if (a, b) not in best_edges or best_edges[(a, b)][0] > weight:
-            best_edges[(a, b)] = (weight, joint_type)
+    # assign node description per edge
+    new_attr["part0_desc"] = part1_desc
+    new_attr["part1_desc"] = part0_desc
 
-    UG = nx.Graph()
-    for (u, v), (w, _) in best_edges.items():
-        UG.add_edge(u, v, weight=w)
-    root = min(
-        UG.nodes,
-        key=lambda n: sum(nx.single_source_dijkstra_path_length(UG, n).values()),
-    )
-    visited = set()
-    queue = [root]
-    parent_map = {}
-    while queue:
-        current = queue.pop(0)
-        visited.add(current)
-        for neighbor in UG.neighbors(current):
-            if neighbor in visited:
-                continue
-            parent_map[neighbor] = current
-            queue.append(neighbor)
-    edges_to_add = []
-    edges_to_remove = []
+    G.remove_edge(u, v, key)
+    G.add_edge(v, u, **new_attr)
 
-    for child, parent in parent_map.items():
-        # Check if there are edges from child to parent (wrong direction)
-        if G.has_edge(child, parent):
-            for k, data in list(G[child][parent].items()):
-                joint_type = data.get("joint_type", "")
-                if joint_type == "fixed":
-                    # Reorient fixed edge to go parent -> child
-                    edges_to_remove.append((child, parent, k))
-                    edges_to_add.append((parent, child, data))  # reversed
-        # Check if parent already points to child (correct direction)
 
-    # Apply reorientation
-    for u, v, k in edges_to_remove:
-        G.remove_edge(u, v, k)
-    for u, v, data in edges_to_add:
-        G.add_edge(u, v, **data)
+def graph_to_tree(G: nx.MultiDiGraph) -> tuple[nx.MultiDiGraph, str]:
+    root, root_candidates = find_kinematic_root(G)
+    for candidate in root_candidates:
+        if candidate is root:
+            continue
+        else:
+            # get all the directed edge point to the candidate root
+            incoming_edges = list(G.in_edges(candidate, keys=True))
+            for other, candy, key, attri in incoming_edges:
+                try:
+                    # reorient the edge
+                    graph_swap_dir(G, other, candy, key)
+                    cycle = nx.find_cycle(G, orientation="original")
+                    print("cycle found, restore re-oriention")
+                    graph_swap_dir(G, candy, other, key)
+                except Exception as e:
+                    print("no cycle found, pass the re-oriention")
+                    break
+                raise Exception(
+                    "all the edges point to the candidate cannot be re-oriented"
+                )
+    root, root_candidates = find_kinematic_root(G)
+    if len(root_candidates) > 1:
+        raise Exception("invalid re-oriented graph")
 
     return G, root
 
 
-def detect_redundancy_kr(G, dir):
+def leave_to_root_list(G: nx.MultiDiGraph):
+    leaves = [n for n in G.nodes if G.in_degree(n) == 0]
+    queue = deque(leaves)
+
+    while queue:
+        child = queue.popleft()
+        for parent in G.successors(child):
+            queue.append(parent)
+            if parent in leaves:
+                leaves.remove(parent)
+            leaves.append(parent)
+    return leaves
+
+
+def detect_redundancy_kr(G: nx.MultiDiGraph, root: str, dir):
+    """
+    Detect and remove redundant edges in a kinematic tree structure.
+    For each node (except root), find all paths to the root and remove redundant edges
+    based on the maximum margin between masks.
+
+    Args:
+        G: NetworkX MultiDiGraph representing the kinematic structure
+        root: The root node of the tree
+        dir: Directory containing mask images for margin calculation
+
+    Returns:
+        G: Graph with redundant edges removed
+    """
+    edges_to_remove = []
+
+    node_list = leave_to_root_list(G)
+    for node in node_list:
+        if node == root:
+            continue
+        mask_node_path = os.path.join(dir, f"{node}.png")
+        margin_dict = {}
+        for parent in G.successors(node):
+            mask_parent_path = os.path.join(dir, f"{parent}.png")
+            margin_dict[parent] = get_margin()
+    return G
+
+
+def detect_redundancy_kr_sample(G: nx.MultiDiGraph, root: str, dir):
+    """
+    Detect and remove redundant edges in a kinematic tree structure.
+    For each node (except root), find all paths to the root and remove redundant edges
+    based on the maximum margin between masks.
+
+    Args:
+        G: NetworkX MultiDiGraph representing the kinematic structure
+        root: The root node of the tree
+        dir: Directory containing mask images for margin calculation
+
+    Returns:
+        G: Graph with redundant edges removed
+    """
+    edges_to_remove = []
+
+    # For each node (except root), find paths to root
+    for node in G.nodes():
+        if node == root:
+            continue
+
+        try:
+            # Find all simple paths from node to root
+            all_paths = list(nx.all_simple_paths(G, node, root))
+
+            if len(all_paths) <= 1:
+                continue  # No redundancy if only one path exists
+
+            # Collect all edges involved in these paths
+            path_edges = set()
+            for path in all_paths:
+                for i in range(len(path) - 1):
+                    u, v = path[i], path[i + 1]
+                    # Get all edges between u and v (in case of MultiDiGraph)
+                    if G.has_edge(u, v):
+                        for key in G[u][v]:
+                            path_edges.add((u, v, key))
+
+            # Find redundant edges by checking for triangular relationships
+            # A->B->C and A->C, where A->C is potentially redundant
+            for path in all_paths:
+                if len(path) < 2:
+                    continue
+
+                # Check each segment of the path for potential shortcuts
+                for i in range(len(path) - 2):
+                    start_node = path[i]
+                    intermediate_node = path[i + 1]
+                    end_node = path[i + 2]
+
+                    # Check if there's a direct edge from start to end (shortcut)
+                    if G.has_edge(start_node, end_node):
+                        # We have a potential redundancy: start->intermediate->end vs start->end
+                        edges_in_triangle = [
+                            (start_node, intermediate_node),
+                            (intermediate_node, end_node),
+                            (start_node, end_node),
+                        ]
+
+                        # Calculate margins for each edge to determine which to remove
+                        max_margin = -1
+                        edge_to_remove = None
+
+                        for edge_u, edge_v in edges_in_triangle:
+                            if not G.has_edge(edge_u, edge_v):
+                                continue
+
+                            try:
+                                mask_u_path = os.path.join(dir, f"{edge_u}.png")
+                                mask_v_path = os.path.join(dir, f"{edge_v}.png")
+
+                                if os.path.exists(mask_u_path) and os.path.exists(
+                                    mask_v_path
+                                ):
+                                    mask_u = cv2.imread(
+                                        mask_u_path, cv2.IMREAD_GRAYSCALE
+                                    )
+                                    mask_v = cv2.imread(
+                                        mask_v_path, cv2.IMREAD_GRAYSCALE
+                                    )
+
+                                    if mask_u is not None and mask_v is not None:
+                                        margin = get_margin(mask_u, mask_v)
+                                        if margin > max_margin:
+                                            max_margin = margin
+                                            # Store all keys for this edge pair
+                                            if G.has_edge(edge_u, edge_v):
+                                                for key in G[edge_u][edge_v]:
+                                                    edge_to_remove = (
+                                                        edge_u,
+                                                        edge_v,
+                                                        key,
+                                                    )
+                            except Exception as e:
+                                print(
+                                    f"Error processing masks for {edge_u}->{edge_v}: {e}"
+                                )
+                                continue
+
+                        # Add the edge with maximum margin to removal list
+                        if edge_to_remove and edge_to_remove not in edges_to_remove:
+                            edges_to_remove.append(edge_to_remove)
+
+        except nx.NetworkXNoPath:
+            # No path exists from this node to root, skip
+            continue
+        except Exception as e:
+            print(f"Error processing node {node}: {e}")
+            continue
+
+    # Remove redundant edges
+    for u, v, key in edges_to_remove:
+        if G.has_edge(u, v, key):
+            G.remove_edge(u, v, key)
+            print(f"Removed redundant edge: {u} -> {v} (key: {key})")
+
+    return G
+
+
+def detect_redundancy_kr_deprecated(G, dir):
     # for all
     # A->B->C A->C
     # remove A->C
