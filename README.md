@@ -144,7 +144,31 @@ python remove_bg_sample.py --dataset_dir ../Data/PSR_final/val --trash_dir ../Da
 ```
 
 6. Prune relations using networkx
-TODO
+```bash
+python prune_psr.py --dataset_dir ./data/small_coco
+```
+```
+Processing Sample_213...
+cycle found
+{'mask1': 88.0, 'mask3': 0.0, 'mask2': 90.922485}
+{'mask3': 4.0, 'mask2': 0.0}
+Removed redundant edge: mask0 -> mask1 (key: 0)
+Removed redundant edge: mask0 -> mask2 (key: 0)
+Removed redundant edge: mask1 -> mask3 (key: 0)
+Created new ./data/small_coco/Sample_213/new_config.json
+Processing Sample_158...
+cycle found
+{'mask3': 5.7938, 'mask2': 11.0}
+Removed redundant edge: mask0 -> mask2 (key: 0)
+Created new ./data/small_coco/Sample_158/new_config.json
+...
+```
+<img width="1078" height="1077" alt="image" src="https://github.com/user-attachments/assets/bf40181f-b360-428a-b313-3f262cacdd6f" />
+<img width="1076" height="1075" alt="image" src="https://github.com/user-attachments/assets/b855f5ca-9b5e-492a-8138-4d98e47f014e" />
+<img width="803" height="1069" alt="image" src="https://github.com/user-attachments/assets/2d291d75-31f9-4b1c-94e4-05d1ef4c9f35" />
+<img width="804" height="1074" alt="image" src="https://github.com/user-attachments/assets/559ee31a-d320-48a1-b5b2-daa119343630" />
+
+
 
 7. output the networkx back into a json file
 Test command:
