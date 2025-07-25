@@ -196,13 +196,16 @@ def get_margin(mask_u, mask_v):
     if not np.any(mask_u_bool) or not np.any(mask_v_bool):
         return float("inf")  # No valid mask area, treat as max distance
 
-    # Compute the distance transform of the first mask
-    # cv2.DIST_L2 for Euclidean distance, 5 for mask size (can be 0 for exact)
-    dist_transform_u = cv2.distanceTransform(
-        mask_u_bool.astype(np.uint8), cv2.DIST_L2, 5
-    )
+    # Check if masks overlap
+    if np.any(mask_u_bool & mask_v_bool):
+        return 0.0  # Masks overlap, distance is 0
 
-    # Get the distances from pixels in mask_v to mask_u
+    # For disjoint masks, compute distance transform of the inverse of mask_u
+    # This gives us the distance from each pixel TO the nearest mask_u pixel
+    mask_u_inverse = (~mask_u_bool).astype(np.uint8)
+    dist_transform_u = cv2.distanceTransform(mask_u_inverse, cv2.DIST_L2, 5)
+
+    # Get the distances from pixels in mask_v to the nearest pixel in mask_u
     # We only care about the distances at the locations of white pixels in mask_v
     distances_at_v_pixels = dist_transform_u[mask_v_bool]
 
@@ -329,11 +332,43 @@ def detect_redundancy_kr(G: nx.MultiDiGraph, root: str, dir):
     for node in node_list:
         if node == root:
             continue
+
+        # Check if node has multiple parents (potential redundancy)
+        parents = list(G.successors(node))
+        if len(parents) <= 1:
+            continue
+
         mask_node_path = os.path.join(dir, f"{node}.png")
+        mask_node = cv2.imread(mask_node_path, cv2.IMREAD_GRAYSCALE)
+
         margin_dict = {}
-        for parent in G.successors(node):
+        for parent in parents:
             mask_parent_path = os.path.join(dir, f"{parent}.png")
-            margin_dict[parent] = get_margin()
+            mask_parent = cv2.imread(mask_parent_path, cv2.IMREAD_GRAYSCALE)
+
+            # Calculate margin between node and parent masks
+            margin = get_margin(mask_node, mask_parent)
+            margin_dict[parent] = margin
+        print(margin_dict)
+
+        # If we have multiple parents with calculated margins, keep only the one with minimum margin
+        if len(margin_dict) > 1:
+            # Find parent with minimum margin (closest relationship)
+            min_margin_parent = min(margin_dict.items(), key=lambda x: x[1])[0]
+
+            # Remove all edges from node to all parents except the one with minimum margin
+            for parent in margin_dict:
+                if parent != min_margin_parent and G.has_edge(node, parent):
+                    edges_between = list(G[node][parent].keys())
+                    for key in edges_between:
+                        edges_to_remove.append((node, parent, key))
+
+    # Remove redundant edges
+    for u, v, key in edges_to_remove:
+        if G.has_edge(u, v, key):
+            G.remove_edge(u, v, key)
+            print(f"Removed redundant edge: {u} -> {v} (key: {key})")
+
     return G
 
 
