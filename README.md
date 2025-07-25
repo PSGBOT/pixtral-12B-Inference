@@ -163,10 +163,10 @@ Removed redundant edge: mask0 -> mask2 (key: 0)
 Created new ./data/small_coco/Sample_158/new_config.json
 ...
 ```
-<img width="1078" height="1077" alt="image" src="https://github.com/user-attachments/assets/bf40181f-b360-428a-b313-3f262cacdd6f" />
-<img width="1076" height="1075" alt="image" src="https://github.com/user-attachments/assets/b855f5ca-9b5e-492a-8138-4d98e47f014e" />
-<img width="803" height="1069" alt="image" src="https://github.com/user-attachments/assets/2d291d75-31f9-4b1c-94e4-05d1ef4c9f35" />
-<img width="804" height="1074" alt="image" src="https://github.com/user-attachments/assets/559ee31a-d320-48a1-b5b2-daa119343630" />
+<img width="107" height="107" alt="image" src="https://github.com/user-attachments/assets/bf40181f-b360-428a-b313-3f262cacdd6f" />
+<img width="107" height="107" alt="image" src="https://github.com/user-attachments/assets/b855f5ca-9b5e-492a-8138-4d98e47f014e" />
+<img width="80" height="106" alt="image" src="https://github.com/user-attachments/assets/2d291d75-31f9-4b1c-94e4-05d1ef4c9f35" />
+<img width="80" height="107" alt="image" src="https://github.com/user-attachments/assets/559ee31a-d320-48a1-b5b2-daa119343630" />
 
 
 
