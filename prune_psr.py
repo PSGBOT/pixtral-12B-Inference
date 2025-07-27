@@ -2,6 +2,7 @@ import json
 import os
 import networkx as nx
 import argparse
+import shutil
 from nx_utils.build_nx import read_rel_as_nx
 from nx_utils.output_nx import create_new_config_json
 from nx_utils.visualize import show_graph
@@ -82,8 +83,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_dir", type=str, required=True, help="Path to the PSR dataset"
     )
+    parser.add_argument(
+        "--trash_dir",
+        type=str,
+        required=True,
+        help="Path to the removed PSR dataset sample",
+    )
 
     args = parser.parse_args()
+    trash_dataset_dir = args.trash_dir
+    if not os.path.exists(trash_dataset_dir):
+        print(f"Creating prune trash dataset directory: {trash_dataset_dir}")
+        os.makedirs(trash_dataset_dir)
 
     sample_list = os.listdir(args.dataset_dir)
     for sample_name in sample_list:
@@ -102,7 +113,18 @@ if __name__ == "__main__":
         if valid:
             show_graph(G, src_img_path, mask_path)
 
-            create_new_config_json(sample_dir, G, kr_list, pos_dict)
+            create_new_config_json(
+                sample_dir,
+                G,
+                kr_list,
+                pos_dict,
+                new_config_filename="pruned_config.json",
+            )
         else:
-            print(f"Failed to prune {sample_name}, delete!!")
-            os.remove(sample_dir)
+            print(f"Failed to prune {sample_name}, move to trash!!")
+            destination_path = os.path.join(trash_dataset_dir, sample_name)
+            try:
+                shutil.move(sample_dir, destination_path)
+                print(f"Moved {sample_name} to {destination_path}")
+            except Exception as e:
+                print(f"Error moving {sample_name}: {e}")
