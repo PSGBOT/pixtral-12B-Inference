@@ -59,7 +59,6 @@ def show_graph(G, src_img_path, mask_path):
     node_sizes = [100 + 20 * i for i in range(len(G))]
     M = G.number_of_edges()
     edge_colors = []
-    pc.set_array(np.array(edge_colors))
     edge_alphas = [(5 + i) / (M + 18) for i in range(M)]
     edge_list = []
     for i, (u, v, k, edge_data) in enumerate(G.edges(keys=True, data=True)):
@@ -95,6 +94,7 @@ def show_graph(G, src_img_path, mask_path):
         edges[i].set_alpha(edge_alphas[i])
 
     pc = mpl.collections.PatchCollection(edges, cmap=cmap)
+    pc.set_array(np.array(edge_colors))
     pc.set_array(edge_colors)
     pc.set_clim(0, len(PSR_KR_CAT)-1)
 
