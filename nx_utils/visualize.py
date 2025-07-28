@@ -68,13 +68,43 @@ def show_graph(G, src_img_path, mask_path):
 
     cmap = plt.cm.plasma
     connectionstyle = [f"arc3,rad={r}" for r in it.accumulate([0.1] * 4)]
+    pos=nx.get_node_attributes(G, "pos")
     nx.draw_networkx_nodes(
         G,
-        pos=nx.get_node_attributes(G, "pos"),
+        pos,
         node_size=node_sizes,
         node_color="indigo",
         ax=ax,  # Draw on the specific axes
     )
+    # label nodes
+    node_functions = []
+    for u, v, k, edge_data in G.edges(keys=True, data=True):
+        for node, func_key in [(u, "part0_function"), (v, "part1_function")]:
+            func_data = edge_data.get(func_key)
+            if func_data:
+                if node not in node_functions:
+                    node_functions[node] = []
+                if isinstance(func_data, list):
+                    function_list = func_data
+                else:
+                    function_list = [func_data]
+                for f in function_list: # do not append identical functions
+                    if f not in node_functions[node]:
+                        node_functions[node].append(f)
+    for node, (x, y) in pos.items():
+        functions = node_functions.get(node, [])
+        for i, label in functions:
+            ax.text(
+                x + 10, y - i * 15,  # stack downwards
+                label,
+                fontsize=8,
+                color="black",
+                bbox=dict(boxstyle="round,pad=0.3", fc="lightyellow", ec="black", lw=0.5, alpha=0.8),
+                ha="left",
+                va="center"
+            )
+
+    #draw edges
     edges = nx.draw_networkx_edges(
         G,
         pos=nx.get_node_attributes(G, "pos"),
