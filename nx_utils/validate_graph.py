@@ -226,8 +226,9 @@ def find_kinematic_root(G):
     leaves = [n for n in G.nodes if G.in_degree(n) == 0]
     queue = deque(leaves)
 
-    for leaf in leaves:
-        node_value[leaf] = 1
+    for node in G.nodes:
+        if node not in node_value:
+            node_value[node] = 1
 
     while queue:
         child = queue.popleft()
