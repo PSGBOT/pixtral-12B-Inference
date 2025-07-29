@@ -3,7 +3,34 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import itertools as it
 import cv2
+import numpy as np
 
+PSR_KR_CAT = [
+    "fixed",  # keep iff only "fixed" is detected
+    "revolute-static",
+    "prismatic-static",
+    "spherical-static",
+    "revolute-controlled",
+    "prismatic-controlled",
+    "spherical-controlled",
+    "revolute-free",
+    "prismatic-free",
+    "spherical-free",
+    "supported",  # keep
+    "flexible",  # keep
+    "unrelated",  # ignore
+    "unknown",  # delete others if detected
+]
+
+appendable_joint_types = ["revolute", "prismatic", "spherical"]
+
+def get_relation_type(edge_attributes):
+    joint_type = edge_attributes.get("joint_type")
+    if joint_type in appendable_joint_types:
+        control_type = edge_attributes.get("controllable")
+        joint_type = f"{joint_type}-{control_type}"
+    index = PSR_KR_CAT.index(joint_type)
+    return index
 
 def show_graph(G, src_img_path, mask_path):
     # Load images
@@ -31,25 +58,64 @@ def show_graph(G, src_img_path, mask_path):
 
     node_sizes = [100 + 20 * i for i in range(len(G))]
     M = G.number_of_edges()
-    edge_colors = list(range(2, M + 2))  # Convert range to list
+    edge_colors = []
     edge_alphas = [(5 + i) / (M + 18) for i in range(M)]
+    edge_list = []
+    for i, (u, v, k, edge_data) in enumerate(G.edges(keys=True, data=True)):
+        index = get_relation_type(edge_data)
+        edge_colors.append(index) # ToDo: index -> color(RGB?) relation
+        edge_list.append((u, v, k))
+
     cmap = plt.cm.plasma
     connectionstyle = [f"arc3,rad={r}" for r in it.accumulate([0.1] * 4)]
+    pos=nx.get_node_attributes(G, "pos")
     nx.draw_networkx_nodes(
         G,
-        pos=nx.get_node_attributes(G, "pos"),
+        pos,
         node_size=node_sizes,
         node_color="indigo",
         ax=ax,  # Draw on the specific axes
     )
+    # label nodes
+    node_functions = []
+    for u, v, k, edge_data in G.edges(keys=True, data=True):
+        for node, func_key in [(u, "part0_function"), (v, "part1_function")]:
+            func_data = edge_data.get(func_key)
+            if func_data:
+                if node not in node_functions:
+                    node_functions[node] = []
+                if isinstance(func_data, list):
+                    function_list = func_data
+                else:
+                    function_list = [func_data]
+                for f in function_list: # do not append identical functions
+                    if f not in node_functions[node]:
+                        node_functions[node].append(f)
+    for node, (x, y) in pos.items():
+        functions = node_functions.get(node, [])
+        for i, label in functions:
+            ax.text(
+                x + 10, y - i * 15,  # stack downwards
+                label,
+                fontsize=8,
+                color="black",
+                bbox=dict(boxstyle="round,pad=0.3", fc="lightyellow", ec="black", lw=0.5, alpha=0.8),
+                ha="left",
+                va="center"
+            )
+
+    #draw edges
     edges = nx.draw_networkx_edges(
         G,
         pos=nx.get_node_attributes(G, "pos"),
+        edgelist=edge_list,
         node_size=node_sizes,
         arrowstyle="->",
         arrowsize=20,
         edge_color=edge_colors,
         edge_cmap=cmap,
+        edge_vmin=0,
+        edge_vmax=len(PSR_KR_CAT)-1, # change to modify color design
         width=5,
         connectionstyle=connectionstyle,
         ax=ax,  # Draw on the specific axes
@@ -58,7 +124,9 @@ def show_graph(G, src_img_path, mask_path):
         edges[i].set_alpha(edge_alphas[i])
 
     pc = mpl.collections.PatchCollection(edges, cmap=cmap)
+    pc.set_array(np.array(edge_colors))
     pc.set_array(edge_colors)
+    pc.set_clim(0, len(PSR_KR_CAT)-1)
 
     ax.set_axis_off()
     plt.colorbar(pc, ax=ax)
