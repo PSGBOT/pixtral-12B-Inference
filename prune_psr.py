@@ -3,6 +3,7 @@ import os
 import networkx as nx
 import argparse
 import shutil
+from nx_utils import visualize
 from nx_utils.build_nx import read_rel_as_nx
 from nx_utils.output_nx import create_new_config_json
 from nx_utils.visualize import show_graph
@@ -89,6 +90,12 @@ if __name__ == "__main__":
         required=True,
         help="Path to the removed PSR dataset sample",
     )
+    parser.add_argument(
+        "--visualize",
+        type=bool,
+        default=False,
+        help="Visualize the graph before and after pruning",
+    )
 
     args = parser.parse_args()
     trash_dataset_dir = args.trash_dir
@@ -108,10 +115,12 @@ if __name__ == "__main__":
             kr_list = psr_dict["kinematic relation"]
             pos_dict = psr_dict["part center"]
         G = read_rel_as_nx(kr_list, pos_dict)
-        show_graph(G, src_img_path, mask_path)
+        if args.visualize:
+            show_graph(G, src_img_path, mask_path)
         G, valid = prune_kinematic_relation(G, sample_dir, PSR_KR_CAT)  # prune
         if valid:
-            show_graph(G, src_img_path, mask_path)
+            if args.visualize:
+                show_graph(G, src_img_path, mask_path)
 
             create_new_config_json(
                 sample_dir,
