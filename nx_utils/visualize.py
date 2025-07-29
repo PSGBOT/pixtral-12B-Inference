@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.collections
 import itertools as it
 import cv2
 import numpy as np
@@ -24,6 +25,7 @@ PSR_KR_CAT = [
 
 appendable_joint_types = ["revolute", "prismatic", "spherical"]
 
+
 def get_relation_type(edge_attributes):
     joint_type = edge_attributes.get("joint_type")
     if joint_type in appendable_joint_types:
@@ -31,6 +33,7 @@ def get_relation_type(edge_attributes):
         joint_type = f"{joint_type}-{control_type}"
     index = PSR_KR_CAT.index(joint_type)
     return index
+
 
 def show_graph(G, src_img_path, mask_path):
     # Load images
@@ -63,12 +66,12 @@ def show_graph(G, src_img_path, mask_path):
     edge_list = []
     for i, (u, v, k, edge_data) in enumerate(G.edges(keys=True, data=True)):
         index = get_relation_type(edge_data)
-        edge_colors.append(index) # ToDo: index -> color(RGB?) relation
+        edge_colors.append(index)  # ToDo: index -> color(RGB?) relation
         edge_list.append((u, v, k))
 
-    cmap = plt.cm.plasma
-    connectionstyle = [f"arc3,rad={r}" for r in it.accumulate([0.1] * 4)]
-    pos=nx.get_node_attributes(G, "pos")
+    cmap = mpl.cm.plasma
+    connectionstyle = "arc3,rad=0.1"
+    pos = nx.get_node_attributes(G, "pos")
     nx.draw_networkx_nodes(
         G,
         pos,
@@ -77,9 +80,13 @@ def show_graph(G, src_img_path, mask_path):
         ax=ax,  # Draw on the specific axes
     )
     # label nodes
-    node_functions = []
+    node_functions = {}
     for u, v, k, edge_data in G.edges(keys=True, data=True):
-        for node, func_key in [(u, "part0_function"), (v, "part1_function")]:
+        if edge_data.get("root") == "1":
+            pair = [(u, "part0_function"), (v, "part1_function")]
+        else:
+            pair = [(u, "part1_function"), (v, "part0_function")]
+        for node, func_key in pair:
             func_data = edge_data.get(func_key)
             if func_data:
                 if node not in node_functions:
@@ -88,23 +95,30 @@ def show_graph(G, src_img_path, mask_path):
                     function_list = func_data
                 else:
                     function_list = [func_data]
-                for f in function_list: # do not append identical functions
+                for f in function_list:  # do not append identical functions
                     if f not in node_functions[node]:
                         node_functions[node].append(f)
     for node, (x, y) in pos.items():
         functions = node_functions.get(node, [])
-        for i, label in functions:
+        for i, label in enumerate(functions):
             ax.text(
-                x + 10, y - i * 15,  # stack downwards
+                x + 10,
+                y - i * 15,  # stack downwards
                 label,
                 fontsize=8,
                 color="black",
-                bbox=dict(boxstyle="round,pad=0.3", fc="lightyellow", ec="black", lw=0.5, alpha=0.8),
+                bbox=dict(
+                    boxstyle="round,pad=0.3",
+                    fc="lightyellow",
+                    ec="black",
+                    lw=0.5,
+                    alpha=0.8,
+                ),
                 ha="left",
-                va="center"
+                va="center",
             )
 
-    #draw edges
+    # draw edges
     edges = nx.draw_networkx_edges(
         G,
         pos=nx.get_node_attributes(G, "pos"),
@@ -115,7 +129,7 @@ def show_graph(G, src_img_path, mask_path):
         edge_color=edge_colors,
         edge_cmap=cmap,
         edge_vmin=0,
-        edge_vmax=len(PSR_KR_CAT)-1, # change to modify color design
+        edge_vmax=len(PSR_KR_CAT) - 1,  # change to modify color design
         width=5,
         connectionstyle=connectionstyle,
         ax=ax,  # Draw on the specific axes
@@ -123,10 +137,10 @@ def show_graph(G, src_img_path, mask_path):
     for i in range(M):
         edges[i].set_alpha(edge_alphas[i])
 
-    pc = mpl.collections.PatchCollection(edges, cmap=cmap)
+    pc = matplotlib.collections.PatchCollection(edges, cmap=cmap)
     pc.set_array(np.array(edge_colors))
     pc.set_array(edge_colors)
-    pc.set_clim(0, len(PSR_KR_CAT)-1)
+    pc.set_clim(0, len(PSR_KR_CAT) - 1)
 
     ax.set_axis_off()
     plt.colorbar(pc, ax=ax)

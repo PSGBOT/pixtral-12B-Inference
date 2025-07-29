@@ -19,7 +19,21 @@ def read_rel_as_nx(kr_list, pos_dict, all_rel=False):
             if not part0_id or not part1_id:
                 continue
 
+            if not G.has_node(part0_id):
+                pos = pos_dict.get(part0_id, [0, 0])
+                G.add_node(part0_id, pos=(pos[0], pos[1]))
+            if not G.has_node(part1_id):
+                pos = pos_dict.get(part1_id, [0, 0])
+                G.add_node(part1_id, pos=(pos[0], pos[1]))
+
             edge_attributes = {}
+            # assign node function per edge
+            edge_attributes["part0_function"] = part0_func
+            edge_attributes["part1_function"] = part1_func
+
+            # assign node description per edge
+            edge_attributes["part0_desc"] = part0_desc
+            edge_attributes["part1_desc"] = part1_desc
             # assign joint type
             joint_type = kj.get("joint_type", "unknown")
             if joint_type in ["unrelated", "unknown"] and not all_rel:
@@ -28,22 +42,6 @@ def read_rel_as_nx(kr_list, pos_dict, all_rel=False):
             if "controllable" in kj:
                 edge_attributes["controllable"] = kj["controllable"]
             edge_attributes["root"] = root_part
-
-            # assign node function per edge
-            edge_attributes["part0_function"] = part0_func
-            edge_attributes["part1_function"] = part1_func
-
-            # assign node description per edge
-            edge_attributes["part0_desc"] = part0_desc
-            edge_attributes["part1_desc"] = part1_desc
-
-            if not G.has_node(part0_id):
-                pos = pos_dict.get(part0_id, [0, 0])
-                G.add_node(part0_id, pos=(pos[0], pos[1]))
-            if not G.has_node(part1_id):
-                pos = pos_dict.get(part1_id, [0, 0])
-                G.add_node(part1_id, pos=(pos[0], pos[1]))
-
             if root_part == "0":
                 G.add_edge(part1_id, part0_id, **edge_attributes)
             elif root_part == "1":
