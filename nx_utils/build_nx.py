@@ -36,7 +36,7 @@ def read_rel_as_nx(kr_list, pos_dict, all_rel=False):
             edge_attributes["part1_desc"] = part1_desc
             # assign joint type
             joint_type = kj.get("joint_type", "unknown")
-            if joint_type in ["unrelated", "unknown"] and not all_rel:
+            if joint_type in ["unknown"] and not all_rel:
                 continue  # Discard "unrelated" and "unknown" relations
             edge_attributes["joint_type"] = joint_type
             if "controllable" in kj:
