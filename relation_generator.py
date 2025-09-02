@@ -124,13 +124,14 @@ class VLMRelationGenerator:
                         if "description" not in image_res[instance_seg]:
                             print("processing description for parent instance")
                             vlm_service = VLMService(
-                                "GEMINI"
+                                "MISTRAL"
                             )  ## FIXME: "MISTRAL" = pixtral 12B, "GEMINI" = gemini
                             instance_desc = vlm_service.instance_description(
                                 self.src_image_dir,
                                 image_id,
                                 p_mask_dir,
                                 image_res[instance_seg]["bbox"],
+                                debug=debug,
                             )
                             self.part_seg_dataset[image_id]["masks"][instance_seg][
                                 "description"
@@ -244,4 +245,4 @@ if __name__ == "__main__":
     # Load dataset
     generator.load_dataset()
 
-    generator.generate_relation(debug=False)
+    generator.generate_relation(debug=True)
